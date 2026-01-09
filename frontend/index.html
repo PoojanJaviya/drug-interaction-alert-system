@@ -3,54 +3,125 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Drug Interaction Checker</title>
-
-    <!-- Link CSS -->
+    <title>PharmaCheck AI | Clinical Decision Support</title>
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" xintegrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
 
-    <!-- Navbar -->
+    <!-- Professional Medical Navbar -->
     <nav class="navbar">
-        <div class="logo">AI Checker</div>
-        <div class="nav-buttons">
-            <button class="btn-outline">Log in</button>
-            <button class="btn-primary">Get started</button>
+        <div class="logo-container">
+            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 7H13V11H17V13H13V17H11V13H7V11H11V7Z" fill="currentColor"/>
+            </svg>
+            <span class="logo-text">PharmaCheck<span class="logo-accent">AI</span></span>
+        </div>
+        <div class="nav-status">
+            <span class="status-dot"></span> System Operational
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <h1>Build something reliable</h1>
-        <p>Analyze prescriptions and drug interactions using AI</p>
+    <!-- Main Clinical Interface -->
+    <main class="clinical-container">
+        
+        <header class="page-header">
+            <h1>Drug Interaction Analysis</h1>
+            <p class="subtitle">Upload a prescription or enter medication details to screen for potential adverse interactions.</p>
+        </header>
 
-        <!-- Input Card -->
-        <div class="input-card">
+        <!-- Input Section -->
+        <section class="card input-card" id="inputSection">
+            
+            <div class="form-group">
+                <label for="description">Patient Context / Medication List</label>
+                
+                <div class="textarea-wrapper">
+                    <textarea 
+                        id="description"
+                        placeholder="e.g. Patient is currently taking Amoxicillin (500mg) and reports a headache..."
+                    ></textarea>
+                    <!-- Voice Input Button -->
+                    <button id="micBtn" class="mic-button" title="Dictate Symptoms" onclick="toggleSpeech()">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                </div>
+            </div>
 
-            <!-- Description Input -->
-            <textarea 
-                id="description"
-                placeholder="Enter your query regarding the prescribed medicines"
-            ></textarea>
+            <div class="form-group">
+                <label>Prescription Image (Optional)</label>
+                <label class="file-drop-zone">
+                    <input type="file" id="imageInput" accept="image/*" onchange="handleFileSelect()" hidden />
+                    <div class="drop-content">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <span id="fileName">Click to Upload Prescription Image</span>
+                    </div>
+                </label>
+            </div>
 
-            <!-- File Upload -->
-            <label class="file-upload">
-                <input type="file" id="imageInput" accept="image/*" hidden />
-                Upload Prescription Image
-            </label>
+            <div class="action-bar">
+                <button class="btn-primary" onclick="checkInteractions()">
+                    Run Safety Analysis
+                </button>
+            </div>
+        </section>
 
-            <!-- Action Button -->
-           <button class="analyze-btn" onclick="checkInteractions()">
-             Check Safety
-            </button>
-
+        <!-- Loading State -->
+        <div id="loading" class="loading-state" style="display: none;">
+            <div class="pulse-loader"></div>
+            <p>Analyzing clinical data...</p>
         </div>
-    </section>
 
-    <!-- Footer -->
-    <footer>
-        AI output is for educational purposes only. Always consult a doctor.
+        <!-- Results Section -->
+        <section id="results" class="card result-card" style="display: none;">
+            
+            <div class="result-header">
+                <h2>Analysis Report</h2>
+                <div id="riskBadge" class="risk-badge badge-unknown">
+                    Processing...
+                </div>
+            </div>
+
+            <div class="result-body">
+                <div class="data-group">
+                    <span class="data-label">Identified Medications</span>
+                    <div id="medsList" class="med-tags"></div>
+                </div>
+
+                <div class="data-group">
+                    <span class="data-label">Clinical Interaction Alert</span>
+                    <div class="alert-box">
+                        <p id="alertMessage">--</p>
+                    </div>
+                </div>
+
+                <div id="altSection" class="data-group" style="display: none;">
+                    <span class="data-label">Recommended Alternatives</span>
+                    <div class="alternatives-box">
+                        <ul id="altList"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-footer">
+                <button class="btn-secondary" onclick="window.print()">
+                    <i class="fas fa-print"></i> Save Report
+                </button>
+                <button class="btn-secondary" onclick="resetForm()">
+                    Check Another
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="medical-footer">
+        <div class="footer-content">
+            <p><strong>Disclaimer:</strong> This system is a Clinical Decision Support Tool (CDST) and does not provide medical diagnoses.</p>
+            <p>All results must be verified by a licensed healthcare professional.</p>
+        </div>
     </footer>
 
+    <script src="app.js"></script>
 </body>
 </html>

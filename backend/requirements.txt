@@ -1,6 +1,4 @@
 flask
 flask-cors
-google-cloud-vision
-google-generativeai
+anthropic
 python-dotenv
-pillow

@@ -1,91 +1,108 @@
 import os
 import json
 import google.generativeai as genai
-from google.cloud import vision
+import PIL.Image
+import time
 
 # Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-def analyze_prescription_image(image_path):
+def analyze_prescription_image(image_path, use_mock=False):
     """
-    Orchestrates OCR -> AI Analysis pipeline.
+    Analyzes image using available Gemini models.
+    If use_mock=True, returns dummy data immediately.
     """
-    
-    # 1. OCR Extraction
-    try:
-        raw_text = perform_ocr(image_path)
-    except Exception as e:
-        print(f"OCR Error: {e}")
-        return {"error": "Failed to read image text"}
+    if use_mock:
+        return get_mock_analysis()
 
-    if not raw_text or len(raw_text) < 3:
-        return {
-            "risk_level": "Unknown",
-            "alert_message": "Could not detect readable text. Please upload a clearer image."
-        }
-
-    # 2. AI Reasoning (Gemini)
     try:
-        analysis_result = get_drug_interactions(raw_text)
-        return analysis_result
+        # Load image into memory to avoid file locks
+        img = PIL.Image.open(image_path)
+        img.load() 
+        
+        return get_drug_interactions(img)
+
     except Exception as e:
         print(f"AI Error: {e}")
         return {
             "risk_level": "Unknown",
-            "alert_message": "AI analysis service is temporarily unavailable."
+            "alert_message": f"Analysis Error: {str(e)}",
+            "medicines_found": []
         }
 
-def perform_ocr(image_path):
+def get_drug_interactions(image_file):
     """
-    Uses Google Cloud Vision API to detect handwriting.
+    Tries stable models in order: Gemini 2.5 Flash -> Gemini 1.5 Flash
     """
-    client = vision.ImageAnnotatorClient()
-
-    with open(image_path, "rb") as image_file:
-        content = image_file.read()
-
-    image = vision.Image(content=content)
     
-    # document_text_detection is optimized for dense text/handwriting
-    response = client.document_text_detection(image=image)
+    # Priority list: 
+    # 1. gemini-2.5-flash (Your best available model)
+    # 2. gemini-1.5-flash (Reliable backup)
+    # 3. gemini-1.5-flash-latest (Alias backup)
+    models_to_try = [
+        "gemini-2.5-flash",
+        "gemini-1.5-flash", 
+        "gemini-1.5-flash-latest"
+    ]
+
+    prompt = """
+    Act as a clinical toxicologist. Analyze this image of a prescription.
     
-    if response.error.message:
-        raise Exception(f"Vision API Error: {response.error.message}")
-
-    return response.full_text_annotation.text
-
-def get_drug_interactions(extracted_text):
-    """
-    Sends raw text to Gemini Pro for medical analysis.
-    """
-    model = genai.GenerativeModel('gemini-pro')
-
-    # Strict prompt for consistent JSON output
-    prompt = f"""
-    Act as a clinical toxicologist and pharmacist. 
-    Analyze the following text extracted from a handwritten prescription:
-    
-    TEXT: "{extracted_text}"
-
     TASKS:
-    1. Identify all medicine names/active ingredients. Fix OCR typos intelligently.
-    2. Analyze for potential drug-drug interactions between identified medicines.
-    3. Determine the Risk Severity: Low, Medium, High, or Critical.
-    4. Provide a simplified explanation for a patient (no jargon).
-    5. Suggest safer alternatives ONLY if risk is High/Critical.
+    1. Read the handwriting to identify medicine names.
+    2. Check for drug-drug interactions between them.
+    3. Determine Risk Severity (Low, Medium, High, Critical).
+    4. Write a simple alert for the patient.
+    5. Suggest generic/safer alternatives ONLY if risk is High/Critical.
 
-    OUTPUT FORMAT:
-    Return ONLY a valid JSON object with these keys:
-    - medicines_found (list of strings)
-    - risk_level (string: Low, Medium, High, Critical)
-    - risk_color (string: green, yellow, orange, red)
-    - alert_message (string: brief explanation)
-    - alternatives (list of strings, or empty if risk is low)
+    OUTPUT JSON FORMAT:
+    {
+        "medicines_found": ["Meds..."],
+        "risk_level": "Level",
+        "risk_color": "green/yellow/orange/red",
+        "alert_message": "Simple explanation...",
+        "alternatives": ["Alt 1", "Alt 2"]
+    }
     """
 
-    response = model.generate_content(prompt)
-    
-    # Clean response (remove markdown backticks if present)
-    clean_json = response.text.replace("```json", "").replace("```", "").strip()
-    
-    return json.loads(clean_json)
+    last_error = None
+
+    for model_name in models_to_try:
+        try:
+            print(f"Attempting analysis with model: {model_name}...")
+            
+            # We use response_mime_type for Gemini models as it enforces JSON
+            model = genai.GenerativeModel(
+                model_name=model_name,
+                generation_config={"response_mime_type": "application/json"}
+            )
+            
+            response = model.generate_content([prompt, image_file])
+            
+            # Clean JSON (Just in case)
+            clean_json = response.text.replace("```json", "").replace("```", "").strip()
+            
+            print(f"Success with {model_name}!")
+            return json.loads(clean_json)
+
+        except Exception as e:
+            print(f"Failed with {model_name}: {e}")
+            last_error = e
+            continue
+
+    # If all fail
+    raise Exception(f"All models failed. Last Error: {last_error}")
+
+def get_mock_analysis():
+    """
+    Returns fake data for frontend testing.
+    """
+    time.sleep(2) # Simulate network delay
+    return {
+        "medicines_found": ["Warfarin", "Aspirin"],
+        "risk_level": "Critical",
+        "risk_color": "red",
+        "alert_message": "DANGER: Taking Warfarin (blood thinner) with Aspirin significantly increases the risk of internal bleeding.",
+        "alternatives": ["Consult doctor immediately", "Consider Acetaminophen instead of Aspirin"],
+        "disclaimer": "AI-generated. Verify with a doctor."
+    }

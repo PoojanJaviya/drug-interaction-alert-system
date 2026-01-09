@@ -3,9 +3,16 @@ function handleFileSelect() {
     const fileInput = document.getElementById("imageInput");
     const fileNameSpan = document.getElementById("fileName");
     
-    if (fileInput.files.length > 0) {
-        fileNameSpan.innerText = "✅ " + fileInput.files[0].name;
-        fileNameSpan.style.color = "#10b981"; // Keep UI feedback green
+    // Check total files
+    const count = fileInput.files.length;
+
+    if (count > 0) {
+        if (count === 1) {
+            fileNameSpan.innerText = "✅ " + fileInput.files[0].name;
+        } else {
+            fileNameSpan.innerText = "✅ " + count + " Prescriptions Selected";
+        }
+        fileNameSpan.style.color = "#10b981"; 
         fileNameSpan.style.fontWeight = "600";
     }
 }
@@ -37,7 +44,6 @@ function toggleSpeech() {
 
     recognition.onresult = function(event) {
         const transcript = event.results[0][0].transcript;
-        // Append text naturally
         descInput.value += (descInput.value ? " " : "") + transcript;
     };
 
@@ -46,18 +52,15 @@ function toggleSpeech() {
 
 // UI: Reset the Interface
 function resetForm() {
-    // Inputs
     document.getElementById("imageInput").value = "";
     document.getElementById("description").value = "";
-    document.getElementById("fileName").innerText = "Click to Upload Prescription Image";
+    document.getElementById("fileName").innerText = "Click to Upload Prescription Image(s)";
     document.getElementById("fileName").style.color = "";
 
-    // Sections
     document.getElementById("inputSection").style.display = "block";
     document.getElementById("loading").style.display = "none";
     document.getElementById("results").style.display = "none";
     
-    // Content
     document.getElementById("medsList").innerHTML = "";
     document.getElementById("alertMessage").innerText = "";
     document.getElementById("altList").innerHTML = "";
@@ -68,16 +71,15 @@ async function checkInteractions() {
     const fileInput = document.getElementById("imageInput");
     const descriptionInput = document.getElementById("description");
 
-    const file = fileInput.files[0];
+    const files = fileInput.files; // Get FileList
     const description = descriptionInput.value.trim();
 
     // Validation
-    if (!file && !description) {
-        alert("⚠️ Action Required:\nPlease upload a prescription image OR enter medication details.");
+    if (files.length === 0 && !description) {
+        alert("⚠️ Action Required:\nPlease upload at least one prescription image OR enter medication details.");
         return;
     }
 
-    // Switch to Loading State
     const inputSection = document.getElementById("inputSection");
     const loading = document.getElementById("loading");
     const results = document.getElementById("results");
@@ -87,7 +89,12 @@ async function checkInteractions() {
     results.style.display = "none";
 
     const formData = new FormData();
-    if (file) formData.append("image", file);
+    
+    // Loop through all selected files and append them
+    for (let i = 0; i < files.length; i++) {
+        formData.append("image", files[i]);
+    }
+
     if (description) formData.append("description", description);
 
     try {
@@ -100,7 +107,6 @@ async function checkInteractions() {
 
         const json = await response.json();
 
-        // Artificial delay for UX smoothness
         setTimeout(() => {
             loading.style.display = "none";
             results.style.display = "block";
@@ -115,21 +121,18 @@ async function checkInteractions() {
     }
 }
 
-// UI: Display Data (No Business Logic here!)
+// UI: Display Data
 function renderResults(data) {
     const resultCard = document.getElementById("results");
     const riskBadge = document.getElementById("riskBadge");
 
-    // 1. Apply Risk Data directly from Backend
     riskBadge.innerText = data.risk_level;
     
-    // Use the Hex Code calculated by Python
-    const themeColor = data.risk_hex || "#64748b"; // Fallback to slate
+    const themeColor = data.risk_hex || "#64748b"; 
 
     riskBadge.style.backgroundColor = themeColor;
     resultCard.style.borderLeftColor = themeColor;
 
-    // 2. Render Medicines
     const medsList = document.getElementById("medsList");
     medsList.innerHTML = "";
     if (data.medicines_found && data.medicines_found.length > 0) {
@@ -143,10 +146,8 @@ function renderResults(data) {
         medsList.innerHTML = "<span class='text-muted'>No specific medications identified</span>";
     }
 
-    // 3. Render Alert
     document.getElementById("alertMessage").innerText = data.alert_message;
 
-    // 4. Render Alternatives
     const altSection = document.getElementById("altSection");
     const altList = document.getElementById("altList");
     

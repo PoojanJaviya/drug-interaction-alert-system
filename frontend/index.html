@@ -27,7 +27,7 @@
         
         <header class="page-header">
             <h1>Drug Interaction Analysis</h1>
-            <p class="subtitle">Upload a prescription or enter medication details to screen for potential adverse interactions.</p>
+            <p class="subtitle">Upload multiple prescriptions or enter details to screen for cross-interactions.</p>
         </header>
 
         <!-- Input Section -->
@@ -49,12 +49,13 @@
             </div>
 
             <div class="form-group">
-                <label>Prescription Image (Optional)</label>
+                <label>Prescription Images (Upload Multiple)</label>
                 <label class="file-drop-zone">
-                    <input type="file" id="imageInput" accept="image/*" onchange="handleFileSelect()" hidden />
+                    <!-- Added 'multiple' attribute here -->
+                    <input type="file" id="imageInput" accept="image/*" multiple onchange="handleFileSelect()" hidden />
                     <div class="drop-content">
                         <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                        <span id="fileName">Click to Upload Prescription Image</span>
+                        <span id="fileName">Click to Upload Prescription Image(s)</span>
                     </div>
                 </label>
             </div>
@@ -69,7 +70,7 @@
         <!-- Loading State -->
         <div id="loading" class="loading-state" style="display: none;">
             <div class="pulse-loader"></div>
-            <p>Analyzing clinical data...</p>
+            <p>Analyzing clinical data across prescriptions...</p>
         </div>
 
         <!-- Results Section -->

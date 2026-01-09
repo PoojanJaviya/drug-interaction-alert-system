@@ -4,23 +4,17 @@ import google.generativeai as genai
 import PIL.Image
 import time
 
-# Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# --- BUSINESS LOGIC: Color Mappings ---
-# We define the visual identity here in the backend
 RISK_COLORS = {
-    "green": "#10b981",   # Emerald
-    "yellow": "#f59e0b",  # Amber
-    "orange": "#f97316",  # Orange
-    "red": "#ef4444",     # Red
-    "critical": "#b91c1c", # Dark Red
-    "unknown": "#64748b"  # Slate
+    "green": "#10b981", "yellow": "#f59e0b",
+    "orange": "#f97316", "red": "#ef4444",
+    "critical": "#b91c1c", "unknown": "#64748b"
 }
 
-def analyze_prescription_image(image_path, user_text, use_mock=False):
+def analyze_prescription_image(image_paths, user_text, use_mock=False):
     """
-    Analyzes image + optional user text using Gemini.
+    Analyzes multiple images + user text.
     """
     if use_mock:
         return get_mock_analysis()
@@ -28,19 +22,18 @@ def analyze_prescription_image(image_path, user_text, use_mock=False):
     try:
         inputs = []
         
-        # Add Prompt first
-        base_prompt = build_prompt(user_text)
+        # 1. Add Prompt
+        base_prompt = build_prompt(user_text, len(image_paths))
         inputs.append(base_prompt)
 
-        # Add Image if provided
-        if image_path:
-            img = PIL.Image.open(image_path)
+        # 2. Add All Images
+        for path in image_paths:
+            img = PIL.Image.open(path)
             img.load() 
             inputs.append(img)
         
+        # 3. Call AI
         raw_result = get_drug_interactions(inputs)
-        
-        # Post-process: Add UI-ready hex codes here
         return process_risk_analysis(raw_result)
 
     except Exception as e:
@@ -53,33 +46,28 @@ def analyze_prescription_image(image_path, user_text, use_mock=False):
         }
 
 def process_risk_analysis(data):
-    """
-    Enhances the AI response with UI-ready attributes (Hex codes).
-    """
     risk_color_name = data.get("risk_color", "unknown").lower()
-    
-    # Logic: Map the named color to the specific Hex Code
-    # Default to slate gray if unknown
     data["risk_hex"] = RISK_COLORS.get(risk_color_name, RISK_COLORS["unknown"])
-    
     return data
 
-def build_prompt(user_text):
-    """Constructs the prompt with user context."""
+def build_prompt(user_text, image_count):
+    """Constructs prompt aware of multiple files."""
     context = ""
     if user_text:
-        context = f"\nUSER NOTES/SYMPTOMS: The user also provided this context: '{user_text}'. Consider this in your analysis."
+        context += f"\nUSER NOTES: '{user_text}'."
+    
+    file_context = "image" if image_count <= 1 else f"{image_count} different prescription images"
 
     return f"""
-    Act as a clinical toxicologist. Analyze this prescription image and/or user notes.
+    Act as a clinical toxicologist. Analyze this {file_context} and/or user notes.
     {context}
     
     TASKS:
-    1. Read the handwriting to identify medicine names.
-    2. Check for drug-drug interactions between them.
-    3. Determine Risk Severity (Low, Medium, High, Critical).
-    4. Write a simple alert for the patient.
-    5. Suggest generic/safer alternatives ONLY if risk is High/Critical.
+    1. Read the handwriting/text from ALL images provided.
+    2. Identify medicine names from ALL sources.
+    3. Check for drug-drug interactions across these different prescriptions.
+    4. Determine Risk Severity (Low, Medium, High, Critical).
+    5. Write a simple alert for the patient.
 
     OUTPUT JSON FORMAT:
     {{
@@ -92,9 +80,6 @@ def build_prompt(user_text):
     """
 
 def get_drug_interactions(inputs):
-    """
-    Tries stable models. Inputs is a list [prompt, image].
-    """
     models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash"]
 
     for model_name in models_to_try:
@@ -107,8 +92,6 @@ def get_drug_interactions(inputs):
             
             response = model.generate_content(inputs)
             clean_json = response.text.replace("```json", "").replace("```", "").strip()
-            
-            print(f"Success with {model_name}!")
             return json.loads(clean_json)
 
         except Exception as e:
@@ -124,7 +107,7 @@ def get_mock_analysis():
         "risk_level": "Critical",
         "risk_color": "red",
         "risk_hex": RISK_COLORS["red"],
-        "alert_message": "DANGER: Taking Warfarin (blood thinner) with Aspirin significantly increases the risk of internal bleeding.",
-        "alternatives": ["Consult doctor immediately", "Consider Acetaminophen instead of Aspirin"],
+        "alert_message": "DANGER: Taking Warfarin (from Prescription A) with Aspirin (from Prescription B) significantly increases bleeding risk.",
+        "alternatives": ["Consult doctor immediately", "Consider Acetaminophen"],
         "disclaimer": "AI-generated. Verify with a doctor."
     }

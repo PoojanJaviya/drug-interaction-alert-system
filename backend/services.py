@@ -22,12 +22,10 @@ def analyze_prescription_image(image_paths, user_text, language="English", condi
     try:
         inputs = []
         
-        # 1. Add Prompt with History Context
         print(f"DEBUG: Generating prompt. Language: {language}, History Items: {len(past_history) if past_history else 0}")
         base_prompt = build_prompt(user_text, len(image_paths), language, conditions, past_history)
         inputs.append(base_prompt)
 
-        # 2. Add All Images
         for path in image_paths:
             try:
                 img = PIL.Image.open(path)
@@ -36,7 +34,6 @@ def analyze_prescription_image(image_paths, user_text, language="English", condi
             except Exception as img_err:
                 print(f"Error loading image {path}: {img_err}")
                 
-        # 3. Call AI
         raw_result = get_drug_interactions(inputs)
         return process_risk_analysis(raw_result)
 
@@ -55,34 +52,29 @@ def process_risk_analysis(data):
     return data
 
 def build_prompt(user_text, image_count, language, conditions, past_history):
-    """Constructs prompt aware of language and patient conditions."""
+    """Constructs prompt with STRICT VALIDATION."""
     
-    # 1. User Notes Context
     context = ""
     if user_text:
         context += f"\nUSER NOTES: '{user_text}'."
     
-    # 2. History (The Key Feature)
     history_instruction = ""
     if past_history and len(past_history) > 0:
         history_instruction = f"""
-        \nPATIENT MEDICATION HISTORY (Active/Recent): {', '.join(past_history)}.
-        CRITICAL TASK: You MUST check for interactions between the medicines found in the NEW image(s) AND these historical medicines.
+        \nPATIENT MEDICATION HISTORY: {', '.join(past_history)}.
+        CRITICAL TASK: Check interactions between NEW image content AND this history.
         """
 
-    # 3. Patient Conditions Context (Crucial for safety)
     condition_instruction = ""
     if conditions:
-        condition_instruction = f"\nCRITICAL PATIENT CONTEXT: The patient has these conditions: {conditions}. CHECK STRICTLY for contraindications against these."
+        condition_instruction = f"\nCRITICAL PATIENT CONDITIONS: {conditions}. CHECK FOR CONTRAINDICATIONS."
 
-    # 4. Language Context - MAKE THIS LOUD
     lang_instruction = ""
     if language and language.lower() != "english":
         lang_instruction = f"""
         IMPORTANT - LANGUAGE REQUIREMENT:
         The patient speaks {language}. 
         You MUST translate the 'alert_message' and 'alternatives' values into {language}.
-        However, keep the 'medicines_found' names in English (or standard medical terms).
         """
     
     file_context = "image" if image_count <= 1 else f"{image_count} different prescription images"
@@ -95,26 +87,30 @@ def build_prompt(user_text, image_count, language, conditions, past_history):
     {lang_instruction}
     
     TASKS:
-    1. Read the handwriting/text from ALL images provided.
-    2. Identify medicine names from ALL sources.
-    3. Check for drug-drug interactions across these different prescriptions.
-    4. Check for drug-drug interactions between NEW medicines and PATIENT MEDICATION HISTORY.
-    5. Check for contraindications based on the CRITICAL PATIENT CONTEXT provided above.
-    6. Determine Risk Severity (Low, Medium, High, Critical).
-    7. Write a simple alert for the patient.
+    0. **VALIDATION (CRITICAL):** First, check if the image/text contains medical information (prescription, medicine bottle, blister pack, or clinical notes). 
+       - IF THE IMAGE IS RANDOM (e.g., a cat, car, selfie, food, or blank): 
+         Return "risk_level": "Unknown" and "alert_message": "No valid medical prescription or medication detected. Please upload a clear image of a prescription or medicine packaging."
+         Return "medicines_found": []
+         STOP THERE.
+    
+    1. If medical content exists: Identify medicine names.
+    2. Check for drug-drug interactions.
+    3. Check interactions with PATIENT HISTORY.
+    4. Check contraindications with PATIENT CONDITIONS.
+    5. Determine Risk Severity.
+    6. Write a simple alert.
 
     OUTPUT JSON FORMAT:
     {{
         "medicines_found": ["Meds..."],
-        "risk_level": "Level",
+        "risk_level": "Level (or Unknown)",
         "risk_color": "green/yellow/orange/red",
-        "alert_message": "Simple explanation...",
+        "alert_message": "Explanation...",
         "alternatives": ["Alt 1", "Alt 2"]
     }}
     """
 
 def get_drug_interactions(inputs):
-    # Added 'gemini-2.5-flash-lite' and 'gemini-1.5-flash-latest' for better fallback coverage
     models_to_try = [
         "gemini-2.5-flash",
         "gemini-2.5-flash-lite", 
@@ -141,7 +137,6 @@ def get_drug_interactions(inputs):
             last_error = e
             continue
 
-    # Return the specific error from the last model to help debug in UI
     raise Exception(f"All models failed. Last Error: {last_error}")
 
 def get_mock_analysis():
@@ -151,7 +146,7 @@ def get_mock_analysis():
         "risk_level": "Critical",
         "risk_color": "red",
         "risk_hex": RISK_COLORS["red"],
-        "alert_message": "DANGER: Taking Warfarin (from Prescription A) with Aspirin (from Prescription B) significantly increases bleeding risk.",
-        "alternatives": ["Consult doctor immediately", "Consider Acetaminophen"],
-        "disclaimer": "AI-generated. Verify with a doctor."
+        "alert_message": "DANGER: Taking Warfarin with Aspirin increases bleeding risk.",
+        "alternatives": ["Consult doctor immediately"],
+        "disclaimer": "AI-generated."
     }

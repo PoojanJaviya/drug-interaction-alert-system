@@ -3,158 +3,807 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PharmaCheck AI | Clinical Decision Support</title>
-    <link rel="stylesheet" href="style.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" xintegrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-</head>
-<body>
+    <title>MediMatch AI | Clinical Decision Support</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS (Hospital Grade styling) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Professional Medical Navbar -->
-    <nav class="navbar">
-        <div class="logo-container">
-            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 7H13V11H17V13H13V17H11V13H7V11H11V7Z" fill="currentColor"/>
-            </svg>
-            <span class="logo-text">PharmaCheck<span class="logo-accent">AI</span></span>
-        </div>
-        <div class="nav-controls">
-            <!-- New: Language Selector -->
-            <select id="languageSelect" class="lang-select">
-                <option value="English">English</option>
-                <option value="Hindi">Hindi (हिंदी)</option>
-                <option value="Spanish">Spanish (Español)</option>
-                <option value="French">French (Français)</option>
-                <option value="German">German (Deutsch)</option>
-            </select>
-            <div class="nav-status">
-                <span class="status-dot"></span> System Operational
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Clinical Interface -->
-    <main class="clinical-container">
+    <!-- Custom Config for Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        medical: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9', // Primary Blue
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        slate: {
+                            850: '#1e293b', // Sidebar Dark
+                            900: '#0f172a',
+                        },
+                        risk: {
+                            safe: '#10b981',
+                            caution: '#f59e0b',
+                            danger: '#ef4444',
+                            critical: '#b91c1c'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 3s linear infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
         
-        <header class="page-header">
-            <h1>Drug Interaction Analysis</h1>
-            <p class="subtitle">Upload multiple prescriptions or enter details to screen for cross-interactions.</p>
-        </header>
+        /* Custom Scrollbar for Sidebar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 20px; }
+        
+        /* Hide scrollbar for main content but keep functionality */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 h-screen overflow-hidden selection:bg-medical-100 selection:text-medical-900">
 
-        <!-- Input Section -->
-        <section class="card input-card" id="inputSection">
-            
-            <div class="form-group">
-                <label for="description">Patient Context / Medication List</label>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- COMPONENT: LOGIN OVERLAY ---
+        const LoginOverlay = ({ onLogin }) => {
+            const [id, setId] = useState("");
+            const [loading, setLoading] = useState(false);
+
+            const handleSubmit = () => {
+                if(!id) return;
+                setLoading(true);
+                setTimeout(() => {
+                    onLogin(id);
+                }, 800);
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/95 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl text-center transform transition-all">
+                        <div className="flex justify-center mb-6 text-medical-600 animate-bounce">
+                            <i className="fas fa-heart-pulse text-6xl"></i>
+                        </div>
+                        <h1 className="text-3xl font-bold text-slate-800 mb-1 tracking-tight">MediMatch<span className="text-medical-500">AI</span></h1>
+                        <p className="text-slate-500 mb-8 font-medium">Clinical Decision Support Portal</p>
+                        
+                        <div className="space-y-5">
+                            <div className="text-left">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Patient Identity / MRN</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="e.g. JohnDoe123"
+                                    className="w-full mt-1 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-medical-500 focus:border-medical-500 outline-none text-lg font-medium transition-all"
+                                    value={id}
+                                    onChange={(e) => setId(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                                    autoFocus
+                                />
+                            </div>
+                            <button 
+                                onClick={handleSubmit}
+                                disabled={!id || loading}
+                                className="w-full bg-medical-600 hover:bg-medical-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                            >
+                                {loading ? <i className="fas fa-spinner fa-spin"></i> : <span>Access Secure Portal <i className="fas fa-arrow-right ml-1"></i></span>}
+                            </button>
+                        </div>
+                        <div className="mt-8 pt-6 border-t border-slate-100">
+                            <p className="text-xs text-slate-400 flex items-center justify-center gap-2">
+                                <i className="fas fa-shield-alt text-medical-500"></i> HIPAA Compliant & Encrypted Environment
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- COMPONENT: SIDEBAR ---
+        const Sidebar = ({ activeTab, setActiveTab, user, onLogout }) => {
+            const menuItems = [
+                { id: 'home', icon: 'fa-microscope', label: 'Analysis' },
+                { id: 'history', icon: 'fa-file-medical', label: 'Patient History' },
+                { id: 'info', icon: 'fa-book-medical', label: 'Drug Reference' },
+                { id: 'checker', icon: 'fa-laptop-medical', label: 'Interaction Checker' },
+            ];
+
+            return (
+                <div className="w-72 bg-slate-900 text-slate-300 flex flex-col h-full border-r border-slate-800 hidden md:flex shrink-0 transition-all duration-300">
+                    <div className="p-6 flex items-center gap-3 text-white">
+                        <div className="w-10 h-10 bg-medical-600 rounded-lg flex items-center justify-center shadow-lg shadow-medical-500/30">
+                            <i className="fas fa-heart-pulse text-xl"></i>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="font-bold text-lg leading-tight tracking-tight">MediMatch</span>
+                            <span className="text-xs text-medical-400 font-medium tracking-widest uppercase">Clinical AI</span>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
+                        <p className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">Menu</p>
+                        {menuItems.map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => setActiveTab(item.id)}
+                                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                                    activeTab === item.id 
+                                    ? 'bg-medical-600 text-white shadow-md' 
+                                    : 'hover:bg-slate-800 hover:text-white'
+                                }`}
+                            >
+                                <i className={`fas ${item.icon} w-6 text-center transition-transform group-hover:scale-110 ${activeTab === item.id ? 'text-white' : 'text-slate-400'}`}></i>
+                                {item.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="p-4 border-t border-slate-800 bg-slate-900">
+                        <div className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-medical-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-inner">
+                                {user.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                                <p className="text-sm font-semibold text-white truncate">{user}</p>
+                                <p className="text-xs text-medical-400">Active Session</p>
+                            </div>
+                            <button onClick={onLogout} className="text-slate-400 hover:text-red-400 transition-colors p-2" title="Logout">
+                                <i className="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- COMPONENT: RISK BADGE ---
+        const RiskBadge = ({ level, hex }) => {
+            const getIcon = () => {
+                const l = (level || '').toLowerCase();
+                if(l.includes('safe') || l.includes('low')) return 'fa-check-circle';
+                if(l.includes('critical') || l.includes('high')) return 'fa-exclamation-triangle';
+                return 'fa-info-circle';
+            };
+
+            const getColor = () => {
+                const l = (level || '').toLowerCase();
+                if(l.includes('safe') || l.includes('low')) return '#10b981';
+                if(l.includes('critical') || l.includes('high') || l.includes('red')) return '#ef4444';
+                if(l.includes('moderate') || l.includes('medium') || l.includes('yellow')) return '#f59e0b';
+                return '#64748b';
+            }
+
+            return (
+                <span 
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-white text-xs font-bold uppercase tracking-wide shadow-sm" 
+                    style={{ backgroundColor: hex || getColor() }}
+                >
+                    <i className={`fas ${getIcon()}`}></i>
+                    {level || 'Unknown'}
+                </span>
+            );
+        };
+
+        // --- PAGE: HOME (OCR SCANNER) ---
+        const Home = ({ patientId }) => {
+            const [text, setText] = useState("");
+            const [files, setFiles] = useState([]);
+            const [previews, setPreviews] = useState([]); 
+            const [loading, setLoading] = useState(false);
+            const [loadingStep, setLoadingStep] = useState(""); 
+            const [result, setResult] = useState(null);
+            const [conditions, setConditions] = useState([]);
+            const [language, setLanguage] = useState("English");
+
+            const handleFileChange = (e) => {
+                if (e.target.files) {
+                    const newFiles = Array.from(e.target.files);
+                    setFiles(prev => [...prev, ...newFiles]);
+                    const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+                    setPreviews(prev => [...prev, ...newPreviews]);
+                }
+            };
+
+            const removeFile = (index) => {
+                const newFiles = [...files];
+                const newPreviews = [...previews];
+                newFiles.splice(index, 1);
+                newPreviews.splice(index, 1);
+                setFiles(newFiles);
+                setPreviews(newPreviews);
+            };
+
+            const toggleCondition = (val) => {
+                setConditions(prev => prev.includes(val) ? prev.filter(c => c !== val) : [...prev, val]);
+            };
+
+            const analyze = async () => {
+                if (!files.length && !text) return alert("Please upload an image or enter text notes.");
                 
-                <div class="textarea-wrapper">
-                    <textarea 
-                        id="description"
-                        placeholder="e.g. Patient is currently taking Amoxicillin (500mg) and reports a headache..."
-                    ></textarea>
-                    <!-- Voice Input Button -->
-                    <button id="micBtn" class="mic-button" title="Dictate Symptoms" onclick="toggleSpeech()">
-                        <i class="fas fa-microphone"></i>
-                    </button>
-                </div>
-            </div>
+                setLoading(true);
+                setResult(null);
+                setLoadingStep("Uploading Images...");
+                const stepInterval = setInterval(() => {
+                    setLoadingStep(prev => {
+                        if(prev === "Uploading Images...") return "Scanning Handwriting...";
+                        if(prev === "Scanning Handwriting...") return "Checking Interactions...";
+                        return "Finalizing Report...";
+                    });
+                }, 1500);
 
-            <!-- New: Patient Conditions Toggles -->
-            <div class="form-group">
-                <label>Special Patient Conditions (Safety Check)</label>
-                <div class="conditions-grid">
-                    <label class="checkbox-card">
-                        <input type="checkbox" name="condition" value="Pregnancy/Breastfeeding">
-                        <span class="check-label"><i class="fas fa-baby-carriage"></i> Pregnancy</span>
-                    </label>
-                    <label class="checkbox-card">
-                        <input type="checkbox" name="condition" value="Elderly (65+)">
-                        <span class="check-label"><i class="fas fa-user-clock"></i> Elderly (65+)</span>
-                    </label>
-                    <label class="checkbox-card">
-                        <input type="checkbox" name="condition" value="Kidney/Liver Disease">
-                        <span class="check-label"><i class="fas fa-procdures"></i> Kidney/Liver Issue</span>
-                    </label>
-                    <label class="checkbox-card">
-                        <input type="checkbox" name="condition" value="High Blood Pressure">
-                        <span class="check-label"><i class="fas fa-heartbeat"></i> Hypertension</span>
-                    </label>
-                </div>
-            </div>
+                const formData = new FormData();
+                files.forEach(f => formData.append("image", f));
+                if (text) formData.append("description", text);
+                formData.append("patient_id", patientId);
+                formData.append("language", language);
+                if (conditions.length) formData.append("conditions", conditions.join(", "));
 
-            <div class="form-group">
-                <label>Prescription Images (Upload Multiple)</label>
-                <label class="file-drop-zone">
-                    <input type="file" id="imageInput" accept="image/*" multiple onchange="handleFileSelect()" hidden />
-                    <div class="drop-content">
-                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                        <span id="fileName">Click to Upload Prescription Image(s)</span>
+                try {
+                    const res = await fetch("/api/analyze", { method: "POST", body: formData });
+                    const json = await res.json();
+                    clearInterval(stepInterval);
+                    
+                    if(json.status === 'success') {
+                        setResult(json.data);
+                    } else {
+                        alert("Error: " + json.error);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    clearInterval(stepInterval);
+                    alert("Analysis Failed. Ensure Backend is running on Port 5000.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const reset = () => {
+                setResult(null);
+                setFiles([]);
+                setPreviews([]);
+                setText("");
+                setConditions([]);
+            };
+
+            return (
+                <div className="max-w-5xl mx-auto animate-fade-in pb-20">
+                    <div className="mb-8">
+                        <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Prescription Analysis</h2>
+                        <p className="text-slate-500 mt-1">AI-powered screening against new prescriptions and patient history.</p>
                     </div>
-                </label>
-            </div>
 
-            <div class="action-bar">
-                <button class="btn-primary" onclick="checkInteractions()">
-                    Run Safety Analysis
-                </button>
-            </div>
-        </section>
+                    {!result ? (
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-up">
+                            <div className="lg:col-span-2 space-y-6">
+                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                    <label className="block text-sm font-bold text-slate-700 mb-3">Clinical Notes / Symptoms</label>
+                                    <div className="relative">
+                                        <textarea 
+                                            className="w-full h-40 p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-medical-500 focus:border-medical-500 outline-none resize-none text-slate-700 leading-relaxed"
+                                            placeholder="e.g. Patient reporting severe headache. Currently taking Amoxicillin..."
+                                            value={text}
+                                            onChange={(e) => setText(e.target.value)}
+                                        ></textarea>
+                                        <button className="absolute bottom-3 right-3 text-slate-400 hover:text-medical-600 transition-colors bg-white p-2 rounded-lg shadow-sm border border-slate-100">
+                                            <i className="fas fa-microphone"></i>
+                                        </button>
+                                    </div>
+                                </div>
 
-        <!-- Loading State -->
-        <div id="loading" class="loading-state" style="display: none;">
-            <div class="pulse-loader"></div>
-            <p>Analyzing clinical data across prescriptions...</p>
-        </div>
+                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                    <label className="block text-sm font-bold text-slate-700 mb-3">Critical Conditions (Safety Checks)</label>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {['Pregnancy', 'Elderly (65+)', 'Liver Issue', 'Hypertension'].map(c => (
+                                            <button 
+                                                key={c}
+                                                onClick={() => toggleCondition(c)}
+                                                className={`px-4 py-3 rounded-xl text-sm font-medium border transition-all flex items-center justify-center gap-2 ${
+                                                    conditions.includes(c) 
+                                                    ? 'bg-medical-50 border-medical-500 text-medical-700 shadow-inner' 
+                                                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-white hover:shadow-sm'
+                                                }`}
+                                            >
+                                                {conditions.includes(c) ? <i className="fas fa-check-circle text-medical-500"></i> : <i className="far fa-circle text-slate-400"></i>}
+                                                {c}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
 
-        <!-- Results Section -->
-        <section id="results" class="card result-card" style="display: none;">
-            
-            <div class="result-header">
-                <h2>Analysis Report</h2>
-                <div id="riskBadge" class="risk-badge badge-unknown">
-                    Processing...
+                            <div className="space-y-6">
+                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-full flex flex-col">
+                                    <label className="block text-sm font-bold text-slate-700 mb-3">Upload Prescriptions</label>
+                                    
+                                    <div className="flex-1 flex flex-col gap-4">
+                                        <label className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 group min-h-[160px] ${
+                                            files.length ? 'border-medical-500 bg-medical-50' : 'border-slate-300 hover:border-medical-400 hover:bg-slate-50'
+                                        }`}>
+                                            <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
+                                            <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                <i className={`fas fa-cloud-upload-alt text-2xl ${files.length ? 'text-medical-600' : 'text-slate-400'}`}></i>
+                                            </div>
+                                            <p className="text-sm font-medium text-slate-700">
+                                                {files.length ? "Add More Pages" : "Drag & Drop or Click"}
+                                            </p>
+                                            <p className="text-xs text-slate-400 mt-1">Supports JPG, PNG</p>
+                                        </label>
+
+                                        {previews.length > 0 && (
+                                            <div className="grid grid-cols-3 gap-2 animate-fade-in">
+                                                {previews.map((src, i) => (
+                                                    <div key={i} className="relative group aspect-square rounded-lg overflow-hidden border border-slate-200">
+                                                        <img src={src} className="w-full h-full object-cover" />
+                                                        <button 
+                                                            onClick={() => removeFile(i)}
+                                                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <i className="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="mt-6 space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 mb-2">Output Language</label>
+                                            <select 
+                                                value={language}
+                                                onChange={(e) => setLanguage(e.target.value)}
+                                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 focus:ring-medical-500"
+                                            >
+                                                <option>English</option>
+                                                <option>Hindi (हिंदी)</option>
+                                                <option>Spanish (Español)</option>
+                                                <option>French (Français)</option>
+                                            </select>
+                                        </div>
+
+                                        <button 
+                                            onClick={analyze}
+                                            disabled={loading || (!files.length && !text)}
+                                            className="w-full bg-medical-600 hover:bg-medical-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 flex justify-center items-center gap-2"
+                                        >
+                                            {loading ? (
+                                                <span className="flex items-center gap-2">
+                                                    <i className="fas fa-circle-notch fa-spin"></i> {loadingStep}
+                                                </span>
+                                            ) : (
+                                                <>
+                                                    <i className="fas fa-microscope"></i>
+                                                    <span>Run Analysis</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="animate-slide-up max-w-4xl mx-auto">
+                            <div className="bg-white rounded-2xl shadow-xl border-t-8 overflow-hidden" style={{ borderTopColor: result.risk_hex || '#64748b' }}>
+                                <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                    <div>
+                                        <h3 className="text-2xl font-bold text-slate-800">Clinical Assessment</h3>
+                                        <p className="text-slate-500 text-sm mt-1">Generated based on provided evidence and patient history.</p>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Risk Level</span>
+                                        <RiskBadge level={result.risk_level} hex={result.risk_hex} />
+                                    </div>
+                                </div>
+
+                                <div className="p-8 space-y-8">
+                                    <div>
+                                        <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">
+                                            <i className="fas fa-capsules text-medical-500"></i> Identified Medications
+                                        </h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {result.medicines_found && result.medicines_found.length ? result.medicines_found.map((m, i) => (
+                                                <span key={i} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium border border-slate-200">
+                                                    {m}
+                                                </span>
+                                            )) : <span className="text-sm text-slate-400 italic">No specific medicines identified in text/image.</span>}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">
+                                            <i className="fas fa-file-medical-alt text-medical-500"></i> Analysis & Warning
+                                        </h4>
+                                        <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-slate-800 leading-relaxed shadow-inner">
+                                            {result.alert_message}
+                                        </div>
+                                    </div>
+
+                                    {result.alternatives && result.alternatives.length > 0 && (
+                                        <div className="animate-fade-in">
+                                            <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">
+                                                <i className="fas fa-clipboard-check text-green-500"></i> Safe Alternatives
+                                            </h4>
+                                            <ul className="bg-green-50 p-5 rounded-xl border border-green-100 space-y-3">
+                                                {result.alternatives.map((alt, i) => (
+                                                    <li key={i} className="text-sm text-green-800 font-medium flex items-start gap-3">
+                                                        <i className="fas fa-check-circle mt-1 text-green-600"></i> 
+                                                        <span>{alt}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="bg-slate-50 px-8 py-6 border-t border-slate-200 flex justify-between items-center">
+                                    <button onClick={reset} className="text-slate-500 hover:text-medical-600 font-medium text-sm flex items-center gap-2 transition-colors">
+                                        <i className="fas fa-arrow-left"></i> Analyze Another
+                                    </button>
+                                    <button onClick={() => window.print()} className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-all flex items-center gap-2">
+                                        <i className="fas fa-print"></i> Save Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            </div>
+            );
+        };
 
-            <div class="result-body">
-                <div class="data-group">
-                    <span class="data-label">Identified Medications</span>
-                    <div id="medsList" class="med-tags"></div>
+        // --- PAGE: HISTORY (CONNECTED TO DB) ---
+        const History = ({ patientId }) => {
+            const [history, setHistory] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                if(!patientId) return;
+                setLoading(true);
+                
+                fetch(`/api/history?patient_id=${patientId}`)
+                    .then(res => res.json())
+                    .then(json => {
+                        if(json.status === 'success') {
+                            setHistory(json.data);
+                        }
+                        setLoading(false);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        setLoading(false);
+                    });
+            }, [patientId]);
+
+            return (
+                <div className="max-w-4xl mx-auto animate-fade-in">
+                    <div className="flex justify-between items-center mb-8">
+                        <div>
+                            <h2 className="text-3xl font-bold text-slate-900">Patient History</h2>
+                            <p className="text-slate-500 text-sm mt-1">Records for Patient ID: <span className="font-bold">{patientId}</span></p>
+                        </div>
+                    </div>
+
+                    {loading ? (
+                        <div className="text-center py-20 text-slate-400">
+                            <i className="fas fa-spinner fa-spin text-3xl"></i>
+                            <p className="mt-4">Loading records...</p>
+                        </div>
+                    ) : history.length === 0 ? (
+                        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
+                            <i className="fas fa-folder-open text-4xl text-slate-300 mb-4"></i>
+                            <p className="text-slate-500">No history found for this patient ID.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {history.map(entry => (
+                                <div key={entry.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer group">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <div className="text-sm text-slate-400 font-semibold mb-1 flex items-center gap-2">
+                                                <i className="far fa-calendar-alt"></i> {new Date(entry.date).toLocaleString()}
+                                            </div>
+                                        </div>
+                                        <RiskBadge level={entry.risk} />
+                                    </div>
+                                    
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                        {entry.meds.map((m, i) => (
+                                            <span key={i} className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded border border-slate-200">{m}</span>
+                                        ))}
+                                    </div>
+                                    
+                                    <p className="text-sm text-slate-600 group-hover:text-medical-700 transition-colors bg-slate-50 p-3 rounded-lg border border-transparent group-hover:border-medical-100">
+                                        <i className="fas fa-info-circle mr-2 text-medical-500"></i> {entry.alert}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
+            );
+        };
 
-                <div class="data-group">
-                    <span class="data-label">Clinical Interaction Alert</span>
-                    <div class="alert-box">
-                        <p id="alertMessage">--</p>
+        // --- PAGE: MEDICINE INFO (CONNECTED TO API) ---
+        const MedicineInfo = () => {
+            const [search, setSearch] = useState("");
+            const [drugs, setDrugs] = useState([]);
+            const [loading, setLoading] = useState(false);
+
+            useEffect(() => {
+                const fetchDrugs = async () => {
+                    setLoading(true);
+                    try {
+                        const res = await fetch(`/api/drugs?search=${search}`);
+                        const json = await res.json();
+                        if (json.status === 'success') {
+                            setDrugs(json.data);
+                        }
+                    } catch (err) {
+                        console.error(err);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+
+                const delayDebounceFn = setTimeout(() => {
+                    fetchDrugs();
+                }, 300); // Debounce typing
+
+                return () => clearTimeout(delayDebounceFn);
+            }, [search]);
+
+            return (
+                <div className="max-w-5xl mx-auto animate-fade-in">
+                    <div className="text-center mb-10">
+                        <h2 className="text-3xl font-bold text-slate-900 mb-2">Drug Reference</h2>
+                        <p className="text-slate-500">Quick access to safety information and warnings.</p>
+                    </div>
+
+                    <div className="max-w-xl mx-auto relative mb-10">
+                        <i className="fas fa-search absolute left-5 top-4 text-slate-400 text-lg"></i>
+                        <input 
+                            type="text" 
+                            placeholder="Search generic or brand names..." 
+                            className="w-full pl-12 pr-6 py-4 rounded-2xl border border-slate-200 shadow-sm focus:ring-4 focus:ring-medical-100 focus:border-medical-500 outline-none text-lg transition-all"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
+
+                    {loading ? (
+                        <div className="text-center text-slate-400 py-10"><i className="fas fa-spinner fa-spin text-2xl"></i></div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {drugs.length === 0 ? (
+                                <p className="text-center col-span-full text-slate-400">No medicines found.</p>
+                            ) : (
+                                drugs.map(med => (
+                                    <div key={med.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:border-medical-300 transition-colors">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <h3 className="font-bold text-medical-700 text-xl">{med.name}</h3>
+                                            <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded uppercase">{med.category}</span>
+                                        </div>
+                                        
+                                        <div className="space-y-3">
+                                            <div>
+                                                <span className="text-xs font-bold text-slate-400 uppercase">Usage</span>
+                                                <p className="text-sm text-slate-700">{med.use}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-xs font-bold text-slate-400 uppercase">Side Effects</span>
+                                                <p className="text-sm text-slate-700">{med.side_effects}</p>
+                                            </div>
+                                            <div className="bg-amber-50 text-amber-800 text-xs p-3 rounded-lg font-medium border border-amber-100 flex gap-2">
+                                                <i className="fas fa-exclamation-triangle mt-0.5"></i> 
+                                                <span>{med.caution}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- PAGE: INTERACTION CHECKER ---
+        const Checker = () => {
+            const [medA, setMedA] = useState("Warfarin");
+            const [medB, setMedB] = useState("Aspirin");
+            const [checking, setChecking] = useState(false);
+            const [result, setResult] = useState(null);
+            const [drugList, setDrugList] = useState([]);
+
+            // Fetch drug list for dropdown
+            useEffect(() => {
+                fetch('/api/drugs')
+                    .then(res => res.json())
+                    .then(json => {
+                        if (json.status === 'success') {
+                            setDrugList(json.data);
+                        }
+                    });
+            }, []);
+
+            const handleCheck = () => {
+                setChecking(true);
+                setResult(null);
+                setTimeout(() => {
+                    setChecking(false);
+                    // Mock Logic
+                    if ((medA === 'Warfarin' && medB === 'Aspirin') || (medA === 'Aspirin' && medB === 'Warfarin')) {
+                        setResult({ risk: 'High', msg: 'Major Interaction: Increased risk of bleeding.' });
+                    } else {
+                        setResult({ risk: 'Low', msg: 'No major interactions found in database.' });
+                    }
+                }, 800);
+            };
+
+            return (
+                <div className="max-w-2xl mx-auto animate-fade-in">
+                    <h2 className="text-3xl font-bold text-slate-900 mb-2">Quick Interaction Check</h2>
+                    <p className="text-slate-500 mb-8">Manual lookup for specific drug combinations.</p>
+                    
+                    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-lg space-y-6 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-medical-400 to-medical-600"></div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                            <div className="space-y-2">
+                                <label className="block text-xs font-bold text-slate-400 uppercase">Medicine A</label>
+                                <select 
+                                    value={medA} onChange={(e) => setMedA(e.target.value)}
+                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none font-medium text-slate-700 focus:border-medical-500 transition-colors"
+                                >
+                                    {drugList.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                                </select>
+                            </div>
+
+                            <div className="hidden md:flex justify-center text-slate-300">
+                                <i className="fas fa-exchange-alt text-2xl"></i>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-xs font-bold text-slate-400 uppercase">Medicine B</label>
+                                <select 
+                                    value={medB} onChange={(e) => setMedB(e.target.value)}
+                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none font-medium text-slate-700 focus:border-medical-500 transition-colors"
+                                >
+                                    {drugList.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={handleCheck}
+                            disabled={checking}
+                            className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition-all mt-4 shadow-lg flex justify-center items-center gap-2"
+                        >
+                            {checking ? <i className="fas fa-spinner fa-spin"></i> : <span>Verify Safety <i className="fas fa-check ml-1"></i></span>}
+                        </button>
+                    </div>
+                    
+                    {/* Result */}
+                    {result && (
+                        <div className={`mt-6 p-5 rounded-xl border flex items-start gap-4 animate-slide-up ${
+                            result.risk === 'High' ? 'bg-red-50 border-red-100' : 'bg-green-50 border-green-100'
+                        }`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                                result.risk === 'High' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                            }`}>
+                                <i className={`fas ${result.risk === 'High' ? 'fa-exclamation' : 'fa-check'}`}></i>
+                            </div>
+                            <div>
+                                <h4 className={`font-bold ${result.risk === 'High' ? 'text-red-800' : 'text-green-800'}`}>
+                                    {result.risk === 'High' ? 'Interaction Detected' : 'Likely Safe'}
+                                </h4>
+                                <p className={`text-sm mt-1 ${result.risk === 'High' ? 'text-red-700' : 'text-green-700'}`}>
+                                    {result.msg}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- MAIN APP CONTAINER ---
+        const App = () => {
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [patientId, setPatientId] = useState("");
+            const [activeTab, setActiveTab] = useState("home");
+
+            const handleLogin = (id) => {
+                setPatientId(id);
+                setIsLoggedIn(true);
+            };
+
+            const handleLogout = () => {
+                setIsLoggedIn(false);
+                setPatientId("");
+                setActiveTab("home");
+            };
+
+            if (!isLoggedIn) return <LoginOverlay onLogin={handleLogin} />;
+
+            return (
+                <div className="flex h-screen bg-slate-50 font-sans">
+                    <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={patientId} onLogout={handleLogout} />
+                    
+                    <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+                        {/* Mobile Header */}
+                        <div className="md:hidden bg-white p-4 border-b flex justify-between items-center shadow-sm z-10 sticky top-0">
+                            <span className="font-bold text-slate-800 flex items-center gap-2">
+                                <i className="fas fa-heart-pulse text-medical-600"></i> MediMatch
+                            </span>
+                            <div className="flex gap-4 text-slate-500">
+                                <button onClick={() => setActiveTab('home')} className={activeTab === 'home' ? 'text-medical-600' : ''}><i className="fas fa-home"></i></button>
+                                <button onClick={() => setActiveTab('history')} className={activeTab === 'history' ? 'text-medical-600' : ''}><i className="fas fa-history"></i></button>
+                                <button onClick={handleLogout}><i className="fas fa-sign-out-alt"></i></button>
+                            </div>
+                        </div>
+
+                        {/* Main Content Area */}
+                        <main className="flex-1 overflow-y-auto p-4 md:p-10 scrollbar-hide bg-white md:bg-transparent">
+                            {activeTab === 'home' && <Home patientId={patientId} />}
+                            {activeTab === 'history' && <History patientId={patientId} />}
+                            {activeTab === 'info' && <MedicineInfo />}
+                            {activeTab === 'checker' && <Checker />}
+                        </main>
+
+                        {/* Disclaimer Footer */}
+                        <footer className="p-3 text-center text-[10px] md:text-xs text-slate-400 bg-white/80 md:bg-slate-50/80 backdrop-blur border-t border-slate-200 z-10">
+                            <p><strong>Disclaimer:</strong> This system is a Clinical Decision Support Tool (CDST) and does not replace professional medical advice. Always verify with a licensed practitioner.</p>
+                        </footer>
                     </div>
                 </div>
+            );
+        };
 
-                <div id="altSection" class="data-group" style="display: none;">
-                    <span class="data-label">Recommended Alternatives</span>
-                    <div class="alternatives-box">
-                        <ul id="altList"></ul>
-                    </div>
-                </div>
-            </div>
-
-            <div class="result-footer">
-                <button class="btn-secondary" onclick="window.print()">
-                    <i class="fas fa-print"></i> Save Report
-                </button>
-                <button class="btn-secondary" onclick="resetForm()">
-                    Check Another
-                </button>
-            </div>
-        </section>
-
-    </main>
-
-    <footer class="medical-footer">
-        <div class="footer-content">
-            <p><strong>Disclaimer:</strong> This system is a Clinical Decision Support Tool (CDST) and does not provide medical diagnoses.</p>
-            <p>All results must be verified by a licensed healthcare professional.</p>
-        </div>
-    </footer>
-
-    <script src="app.js"></script>
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>

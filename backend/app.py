@@ -3,6 +3,7 @@ from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 from services import analyze_prescription_image
+import database 
 
 load_dotenv()
 
@@ -17,26 +18,37 @@ def index():
 def health_check():
     return jsonify({"status": "healthy"})
 
+# --- HISTORY ENDPOINT ---
+@app.route('/api/history', methods=['GET'])
+def get_history():
+    patient_id = request.args.get('patient_id')
+    if not patient_id:
+        return jsonify({"error": "Patient ID required"}), 400
+    
+    history_data = database.get_patient_reports(patient_id)
+    return jsonify({"status": "success", "data": history_data})
+
+# --- NEW: DRUG REFERENCE ENDPOINT ---
+@app.route('/api/drugs', methods=['GET'])
+def get_drugs():
+    query = request.args.get('search', '')
+    drugs = database.search_drugs(query)
+    return jsonify({"status": "success", "data": drugs})
+
+# --- ANALYZE ENDPOINT ---
 @app.route('/api/analyze', methods=['POST'])
 def analyze():
-    """
-    Analyze endpoint.
-    Payload: 
-    - image (Multiple Files allowed)
-    - description (String)
-    - language (String)
-    - conditions (String)
-    """
     use_mock = request.args.get('mock', '').lower() == 'true'
     
-    # Get Text Inputs
     user_text = request.form.get('description', '')
     language = request.form.get('language', 'English')
     conditions = request.form.get('conditions', '')
+    patient_id = request.form.get('patient_id', '').strip()
 
-    # --- DEBUG PRINT ---
-    print(f"Incoming Request -> Language: {language}, Conditions: {conditions}, Text: {user_text}")
-    # -------------------
+    past_history = []
+    if patient_id:
+        past_history = database.get_patient_history(patient_id)
+        print(f"Found history for {patient_id}: {past_history}")
 
     saved_file_paths = []
 
@@ -44,7 +56,6 @@ def analyze():
         temp_dir = "temp_uploads"
         os.makedirs(temp_dir, exist_ok=True)
 
-        # Handle Multiple Images
         if 'image' in request.files:
             files = request.files.getlist('image')
             for file in files:
@@ -53,20 +64,26 @@ def analyze():
                     file.save(file_path)
                     saved_file_paths.append(file_path)
         
-        # Validation
         if not saved_file_paths and not user_text:
              return jsonify({"error": "Please provide an image or a description."}), 400
 
-        # Process with Language & Conditions
         result = analyze_prescription_image(
             saved_file_paths, 
             user_text, 
             language=language, 
-            conditions=conditions, 
+            conditions=conditions,
+            past_history=past_history, 
             use_mock=use_mock
         )
 
-        # Cleanup
+        if patient_id and result.get("medicines_found"):
+            database.save_report(
+                patient_id, 
+                result["medicines_found"], 
+                result.get("risk_level", "Unknown"),
+                result.get("alert_message", "")
+            )
+
         for path in saved_file_paths:
             if os.path.exists(path):
                 os.remove(path)

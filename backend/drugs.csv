@@ -1,0 +1,50 @@
+name,category,use,side_effects,caution
+Amoxicillin,Antibiotic,Treats bacterial infections.,Nausea; rash; diarrhea.,Finish the full course.
+Ibuprofen,NSAID,Relieves pain and fever.,Stomach upset; heartburn.,Take with food. Avoid if you have ulcers.
+Warfarin,Anticoagulant,Prevents blood clots.,Severe bleeding; bruising.,Regular blood tests (INR) required.
+Paracetamol,Analgesic,Treats mild pain and fever.,Rare; liver damage in overdose.,Do not exceed 4g per day.
+Atorvastatin,Statin,Lowers cholesterol.,Muscle pain; digestive issues.,Avoid large amounts of grapefruit juice.
+Metformin,Antidiabetic,Treats type 2 diabetes.,Nausea; stomach upset.,Take with meals.
+Aspirin,Blood Thinner,Pain relief; heart attack prevention.,Bleeding; stomach ulcers.,Do not mix with other blood thinners.
+Lisinopril,ACE Inhibitor,Treats high blood pressure.,Dry cough; dizziness.,Drink plenty of water.
+Cetirizine,Antihistamine,Treats allergies.,Drowsiness; dry mouth.,Avoid alcohol.
+Azithromycin,Antibiotic,Treats respiratory infections.,Stomach pain; diarrhea.,Take on empty stomach if instructed.
+Omeprazole,PPI,Treats acid reflux (GERD).,Headache; nausea.,Take before breakfast.
+Albuterol,Bronchodilator,Treats asthma attacks.,Tremors; nervousness.,Keep inhaler clean.
+Gabapentin,Anticonvulsant,Treats nerve pain.,Dizziness; drowsiness.,Do not stop abruptly.
+Levothyroxine,Hormone,Treats hypothyroidism.,Hair loss; appetite change.,Take on empty stomach 30 mins before food.
+Simvastatin,Statin,Lowers cholesterol.,Muscle weakness.,Avoid grapefruit.
+Losartan,ARB,Treats high blood pressure.,Dizziness; back pain.,Avoid potassium supplements.
+Metoprolol,Beta Blocker,Treats high blood pressure.,Fatigue; slow heartbeat.,Do not stop suddenly.
+Pantoprazole,PPI,Treats GERD/acid reflux.,Joint pain; nausea.,Long term use may affect magnesium levels.
+Prednisone,Corticosteroid,Treats inflammation.,Swelling; mood changes.,Taper off dose gradually.
+Montelukast,Leukotriene Modifier,Treats asthma/allergies.,Mood changes; headache.,Take in the evening.
+Escitalopram,SSRI,Treats depression/anxiety.,Nausea; insomnia.,May take weeks to work.
+Hydrochlorothiazide,Diuretic,Treats blood pressure/edema.,Frequent urination.,Take in the morning.
+Rosuvastatin,Statin,Lowers cholesterol.,Headache; muscle pain.,Report muscle tenderness immediately.
+Amlodipine,Calcium Channel Blocker,Treats high blood pressure.,Swelling ankles; flushing.,Avoid grapefruit.
+Furosemide,Diuretic,Treats fluid retention.,Dehydration; electrolyte loss.,Monitor weight daily.
+Tamsulosin,Alpha Blocker,Treats enlarged prostate.,Dizziness.,Stand up slowly.
+Duloxetine,SNRI,Treats depression/nerve pain.,Nausea; dry mouth.,Monitor blood pressure.
+Meloxicam,NSAID,Treats arthritis.,Indigestion.,Risk of stomach bleeding.
+Clopidogrel,Antiplatelet,Prevents stroke/heart attack.,Bleeding.,Stop before surgery.
+Sertraline,SSRI,Treats depression.,Nausea; tremor.,Do not stop abruptly.
+Tramadol,Opioid Analgesic,Treats moderate-severe pain.,Constipation; dizziness.,Risk of dependency.
+Potassium Chloride,Mineral,Prevents low potassium.,Stomach upset.,Take with food and water.
+Citalopram,SSRI,Treats depression.,Drowsiness; sweating.,Watch for heart rhythm changes.
+Insulin Glargine,Insulin,Diabetes control.,Hypoglycemia; weight gain.,Rotate injection sites.
+Pravastatin,Statin,Lowers cholesterol.,Muscle pain.,Report unexplained muscle pain.
+Carvedilol,Beta Blocker,Heart failure/blood pressure.,Dizziness; weight gain.,Take with food.
+Trazodone,Antidepressant,Treats depression/insomnia.,Drowsiness.,Avoid alcohol.
+Fluoxetine,SSRI,Treats depression/OCD.,Insomnia; anxiety.,Monitor for mood changes.
+Bupropion,Antidepressant,Treats depression/smoking cessation.,Dry mouth; insomnia.,Risk of seizures.
+Ranitidine,H2 Blocker,Treats heartburn.,Headache.,(Note: Check recall status).
+Venlafaxine,SNRI,Treats anxiety/depression.,Nausea; hypertension.,Monitor blood pressure.
+Allopurinol,Xanthine Oxidase Inhibitor,Treats gout.,Rash.,Drink plenty of fluids.
+Cyclobenzaprine,Muscle Relaxant,Treats muscle spasms.,Dry mouth; drowsiness.,Avoid driving.
+Methylphenidate,Stimulant,Treats ADHD.,Insomnia; appetite loss.,Potential for abuse.
+Clonazepam,Benzodiazepine,Treats anxiety/seizures.,Drowsiness; coordination loss.,High risk of dependency.
+Loratadine,Antihistamine,Treats allergies.,Headache.,Non-drowsy formula usually.
+Cephalexin,Antibiotic,Treats bacterial infections.,Diarrhea.,Finish full course.
+Doxycycline,Antibiotic,Treats bacterial infections/acne.,Sun sensitivity.,Use sunscreen.
+Ciprofloxacin,Antibiotic,Treats infections.,Tendon problems.,Drink water; avoid dairy/calcium near dose.

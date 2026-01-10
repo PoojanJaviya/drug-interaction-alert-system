@@ -1,5 +1,7 @@
 import sqlite3
 import json
+import csv
+import os
 from datetime import datetime
 
 DB_NAME = "medical_history.db"
@@ -21,7 +23,7 @@ def init_db():
         )
     ''')
 
-    # 2. Drug Reference Table (NEW)
+    # 2. Drug Reference Table
     c.execute('''
         CREATE TABLE IF NOT EXISTS drug_reference (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,25 +42,53 @@ def init_db():
     seed_drugs()
 
 def seed_drugs():
-    """Populates the drug database with initial data if empty."""
+    """Populates the drug database from CSV or default data."""
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     
-    c.execute('SELECT count(*) FROM drug_reference')
-    if c.fetchone()[0] == 0:
-        print("Seeding Drug Database...")
-        drugs = [
-            ("Amoxicillin", "Antibiotic", "Treats bacterial infections.", "Nausea, rash, diarrhea.", "Finish the full course even if feeling better."),
-            ("Ibuprofen", "NSAID", "Relieves pain, fever, and inflammation.", "Stomach upset, heartburn.", "Take with food. Avoid if you have ulcers."),
-            ("Warfarin", "Anticoagulant", "Prevents blood clots.", "Severe bleeding, bruising.", "Regular blood tests (INR) required. Watch Vitamin K intake."),
-            ("Paracetamol", "Analgesic", "Treats mild pain and fever.", "Rare; liver damage in overdose.", "Do not exceed 4g per day."),
-            ("Atorvastatin", "Statin", "Lowers cholesterol.", "Muscle pain, digestive issues.", "Avoid large amounts of grapefruit juice."),
-            ("Metformin", "Antidiabetic", "Treats type 2 diabetes.", "Nausea, stomach upset.", "Take with meals to reduce side effects."),
-            ("Aspirin", "Blood Thinner/NSAID", "Pain relief, heart attack prevention.", "Bleeding, stomach ulcers.", "Do not mix with other blood thinners without advice."),
-            ("Lisinopril", "ACE Inhibitor", "Treats high blood pressure.", "Dry cough, dizziness.", "Drink plenty of water. Avoid potassium supplements.")
-        ]
-        c.executemany('INSERT INTO drug_reference (name, category, use, side_effects, caution) VALUES (?, ?, ?, ?, ?)', drugs)
-        conn.commit()
+    try:
+        # Check if empty
+        c.execute('SELECT count(*) FROM drug_reference')
+        if c.fetchone()[0] == 0:
+            csv_path = "drugs.csv" 
+            
+            # Try finding CSV in current folder or backend folder
+            if not os.path.exists(csv_path):
+                csv_path = os.path.join("backend", "drugs.csv")
+
+            if os.path.exists(csv_path):
+                print(f"Seeding Drug Database from {csv_path}...")
+                try:
+                    with open(csv_path, 'r', encoding='utf-8') as f:
+                        reader = csv.DictReader(f)
+                        to_db = []
+                        for row in reader:
+                            # Clean keys (strip spaces)
+                            r = {k.strip(): v.strip() for k, v in row.items()}
+                            to_db.append((
+                                r.get('name', ''), 
+                                r.get('category', ''), 
+                                r.get('use', ''), 
+                                r.get('side_effects', ''), 
+                                r.get('caution', '')
+                            ))
+                        
+                        c.executemany('INSERT INTO drug_reference (name, category, use, side_effects, caution) VALUES (?, ?, ?, ?, ?)', to_db)
+                        conn.commit()
+                        print(f"Successfully imported {len(to_db)} drugs.")
+                except Exception as e:
+                    print(f"CSV Import Error: {e}")
+            else:
+                print("CSV not found. Seeding with default small set...")
+                drugs = [
+                    ("Amoxicillin", "Antibiotic", "Treats bacterial infections.", "Nausea, rash.", "Finish full course."),
+                    ("Ibuprofen", "NSAID", "Pain relief.", "Stomach upset.", "Take with food."),
+                    ("Paracetamol", "Analgesic", "Pain relief.", "Liver toxicity.", "Max 4g/day.")
+                ]
+                c.executemany('INSERT INTO drug_reference (name, category, use, side_effects, caution) VALUES (?, ?, ?, ?, ?)', drugs)
+                conn.commit()
+    except Exception as e:
+        print(f"Database Seeding Error: {e}")
     
     conn.close()
 
@@ -79,51 +109,90 @@ def search_drugs(query):
     
     return [dict(row) for row in rows]
 
-# --- Existing History Functions ---
-
 def save_report(patient_id, medicines, risk_level, alert_message=""):
-    if not patient_id or not medicines: return
+    """Saves the result of an analysis."""
+    if not patient_id or not medicines:
+        return
+
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
+    
     meds_json = json.dumps(medicines)
+    
     try:
         c.execute('INSERT INTO patient_history (patient_id, medicines, risk_level, alert_message) VALUES (?, ?, ?, ?)', 
                   (patient_id, meds_json, risk_level, alert_message))
-    except:
-        pass # Handle schema updates if needed
+    except sqlite3.OperationalError:
+        # Fallback for old DB schemas if necessary
+        pass
+
     conn.commit()
     conn.close()
 
 def get_patient_history(patient_id):
-    if not patient_id: return []
+    """
+    Fetches unique medicines for AI context.
+    """
+    if not patient_id:
+        return []
+
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute('SELECT medicines FROM patient_history WHERE patient_id = ? ORDER BY timestamp DESC LIMIT 10', (patient_id,))
-    rows = c.fetchall()
-    conn.close()
-    history_meds = set()
-    for row in rows:
-        try:
-            for m in json.loads(row[0]): history_meds.add(m)
-        except: continue
-    return list(history_meds)
+    try:
+        c.execute('SELECT medicines FROM patient_history WHERE patient_id = ? ORDER BY timestamp DESC LIMIT 10', (patient_id,))
+        rows = c.fetchall()
+        
+        history_meds = set()
+        for row in rows:
+            try:
+                meds = json.loads(row[0])
+                for m in meds:
+                    history_meds.add(m)
+            except:
+                continue
+        conn.close()
+        return list(history_meds)
+    except Exception as e:
+        print(f"DB Error get_history: {e}")
+        conn.close()
+        return []
 
 def get_patient_reports(patient_id):
-    if not patient_id: return []
+    """
+    Fetches full report history for the Frontend UI.
+    """
+    if not patient_id:
+        return []
+
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    c.execute('SELECT id, timestamp, medicines, risk_level, alert_message FROM patient_history WHERE patient_id = ? ORDER BY timestamp DESC', (patient_id,))
-    rows = c.fetchall()
-    conn.close()
-    reports = []
-    for row in rows:
-        try: meds = json.loads(row['medicines'])
-        except: meds = []
-        reports.append({
-            "id": row['id'], "date": row['timestamp'], "meds": meds,
-            "risk": row['risk_level'], "alert": row['alert_message'] or "No details available."
-        })
-    return reports
+    
+    try:
+        c.execute('SELECT id, timestamp, medicines, risk_level, alert_message FROM patient_history WHERE patient_id = ? ORDER BY timestamp DESC', (patient_id,))
+        rows = c.fetchall()
+        conn.close()
 
+        reports = []
+        for row in rows:
+            try:
+                meds = json.loads(row['medicines'])
+            except:
+                meds = []
+                
+            reports.append({
+                "id": row['id'],
+                "date": row['timestamp'],
+                "meds": meds,
+                "risk": row['risk_level'],
+                "alert": row['alert_message'] or "No details available."
+            })
+            
+        return reports
+    except Exception as e:
+        print(f"DB Error get_reports: {e}")
+        conn.close()
+        return []
+
+# Initialize immediately when imported
 init_db()

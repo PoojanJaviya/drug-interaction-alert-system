@@ -1,3 +1,4 @@
+# ... existing imports ...
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
@@ -13,6 +14,14 @@ CORS(app)
 @app.route('/')
 def index():
     return app.send_static_file('index.html')
+
+@app.route('/manifest.json')
+def serve_manifest():
+    return app.send_static_file('manifest.json')
+
+@app.route('/logo medimatch.png')
+def serve_logo():
+    return app.send_static_file('logo medimatch.png')
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -71,7 +80,7 @@ def analyze():
             saved_file_paths, 
             user_text, 
             language=language, 
-            conditions=conditions,
+            conditions=conditions, 
             past_history=past_history, 
             use_mock=use_mock
         )
@@ -100,4 +109,6 @@ def analyze():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # CHANGED: host='0.0.0.0' allows access from other devices on the network
+    app.run(debug=True, port=5000, host='0.0.0.0')
+    

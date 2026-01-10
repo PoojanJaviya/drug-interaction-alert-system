@@ -4,8 +4,6 @@ __pycache__/
 *$py.class
 
 test_api.py
-
-
 # C extensions
 *.so
 

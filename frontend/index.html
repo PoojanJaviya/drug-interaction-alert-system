@@ -12,11 +12,17 @@
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Tailwind CSS (Hospital Grade styling) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Mobile Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <!-- Custom Config for Tailwind -->
     <script>
@@ -27,6 +33,9 @@
                         medical: {
                             50: '#f0f9ff',
                             100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
                             500: '#0ea5e9', // Primary Blue
                             600: '#0284c7',
                             700: '#0369a1',
@@ -34,24 +43,17 @@
                             900: '#0c4a6e',
                         },
                         slate: {
-                            850: '#1e293b', // Sidebar Dark
+                            850: '#1e293b', 
                             900: '#0f172a',
                         },
-                        risk: {
-                            safe: '#10b981',
-                            caution: '#f59e0b',
-                            danger: '#ef4444',
-                            critical: '#b91c1c'
-                        }
                     },
                     fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
                     },
                     animation: {
-                        'fade-in': 'fadeIn 0.3s ease-out',
-                        'slide-up': 'slideUp 0.4s ease-out',
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'spin-slow': 'spin 3s linear infinite',
+                        'fade-in': 'fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'float': 'float 6s ease-in-out infinite',
                     },
                     keyframes: {
                         fadeIn: {
@@ -59,9 +61,17 @@
                             '100%': { opacity: '1' },
                         },
                         slideUp: {
-                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
                             '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
                         }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'glow': '0 0 15px rgba(14, 165, 233, 0.3)',
                     }
                 }
             }
@@ -69,27 +79,46 @@
     </script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         
-        /* Custom Scrollbar for Sidebar */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-overlay {
+            background: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(8px);
+        }
+
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
         
-        /* Hide scrollbar for main content but keep functionality */
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 h-screen overflow-hidden selection:bg-medical-100 selection:text-medical-900">
+<body class="bg-slate-900 text-slate-100 h-screen overflow-hidden selection:bg-medical-500 selection:text-white">
 
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- COMPONENT: LOGIN OVERLAY ---
+        const MEDICINE_DB = [
+            { name: "Amoxicillin", category: "Antibiotic", use: "Treats bacterial infections.", sideEffects: "Nausea, rash, diarrhea.", caution: "Finish the full course even if feeling better." },
+            { name: "Ibuprofen", category: "NSAID", use: "Relieves pain, fever, and inflammation.", sideEffects: "Stomach upset, heartburn.", caution: "Take with food. Avoid if you have ulcers." },
+            { name: "Warfarin", category: "Anticoagulant", use: "Prevents blood clots.", sideEffects: "Severe bleeding, bruising.", caution: "Regular blood tests (INR) required. Watch Vitamin K intake." },
+            { name: "Paracetamol", category: "Analgesic", use: "Treats mild pain and fever.", sideEffects: "Rare; liver damage in overdose.", caution: "Do not exceed 4g per day." },
+            { name: "Atorvastatin", category: "Statin", use: "Lowers cholesterol.", sideEffects: "Muscle pain, digestive issues.", caution: "Avoid large amounts of grapefruit juice." },
+            { name: "Metformin", category: "Antidiabetic", use: "Treats type 2 diabetes.", sideEffects: "Nausea, stomach upset.", caution: "Take with meals to reduce side effects." }
+        ];
+
+        // --- COMPONENT: LOGIN OVERLAY (Glassmorphism) ---
         const LoginOverlay = ({ onLogin }) => {
             const [id, setId] = useState("");
             const [loading, setLoading] = useState(false);
@@ -97,101 +126,110 @@
             const handleSubmit = () => {
                 if(!id) return;
                 setLoading(true);
-                setTimeout(() => {
-                    onLogin(id);
-                }, 800);
+                setTimeout(() => onLogin(id), 800);
             };
 
             return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/95 backdrop-blur-sm p-4 animate-fade-in">
-                    <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl text-center transform transition-all">
-                        <div className="flex justify-center mb-6 text-medical-600 animate-bounce">
-                            <i className="fas fa-heart-pulse text-6xl"></i>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-slate-900 via-medical-900 to-slate-900 p-4 animate-fade-in">
+                    {/* Abstract Background Shapes */}
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-medical-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
+                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{animationDelay: '2s'}}></div>
+                    </div>
+
+                    <div className="relative z-10 w-full max-w-md bg-white/90 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-white/20 transform transition-all">
+                        <div className="text-center mb-8">
+                            <div className="flex justify-center mb-4">
+                                <img src="logo medimatch.png" alt="MediMatch Logo" className="h-60 w-auto object-contain drop-shadow-md animate-float" />
+                            </div>
+                            <p className="text-slate-500 mt-2 font-medium">Secure Clinical Workspace</p>
                         </div>
-                        <h1 className="text-3xl font-bold text-slate-800 mb-1 tracking-tight">MediMatch<span className="text-medical-500">AI</span></h1>
-                        <p className="text-slate-500 mb-8 font-medium">Clinical Decision Support Portal</p>
                         
-                        <div className="space-y-5">
-                            <div className="text-left">
-                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Patient Identity / MRN</label>
-                                <input 
-                                    type="text" 
-                                    placeholder="e.g. JohnDoe123"
-                                    className="w-full mt-1 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-medical-500 focus:border-medical-500 outline-none text-lg font-medium transition-all"
-                                    value={id}
-                                    onChange={(e) => setId(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                                    autoFocus
-                                />
+                        <div className="space-y-6">
+                            <div className="group">
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Medical ID</label>
+                                <div className="relative">
+                                    <i className="fas fa-user-md absolute left-4 top-4 text-slate-400 group-focus-within:text-medical-500 transition-colors"></i>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Enter ID (e.g., Doc123)"
+                                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-medical-500 focus:border-medical-500 outline-none text-lg font-semibold text-slate-700 transition-all shadow-inner"
+                                        value={id}
+                                        onChange={(e) => setId(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                                        autoFocus
+                                    />
+                                </div>
                             </div>
                             <button 
                                 onClick={handleSubmit}
                                 disabled={!id || loading}
-                                className="w-full bg-medical-600 hover:bg-medical-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                                className="w-full bg-gradient-to-r from-medical-600 to-medical-500 hover:from-medical-500 hover:to-medical-400 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl hover:shadow-medical-500/20 transform hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                {loading ? <i className="fas fa-spinner fa-spin"></i> : <span>Access Secure Portal <i className="fas fa-arrow-right ml-1"></i></span>}
+                                {loading ? <i className="fas fa-circle-notch fa-spin"></i> : <span>Authenticate <i className="fas fa-arrow-right ml-2"></i></span>}
                             </button>
                         </div>
-                        <div className="mt-8 pt-6 border-t border-slate-100">
-                            <p className="text-xs text-slate-400 flex items-center justify-center gap-2">
-                                <i className="fas fa-shield-alt text-medical-500"></i> HIPAA Compliant & Encrypted Environment
-                            </p>
+                        <div className="mt-8 text-center">
+                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 text-green-700 text-xs font-bold border border-green-100">
+                                <i className="fas fa-lock"></i> HIPAA Compliant
+                            </span>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        // --- COMPONENT: SIDEBAR ---
+        // --- COMPONENT: SIDEBAR (Modern) ---
         const Sidebar = ({ activeTab, setActiveTab, user, onLogout }) => {
             const menuItems = [
                 { id: 'home', icon: 'fa-microscope', label: 'Analysis' },
                 { id: 'history', icon: 'fa-file-medical', label: 'Patient History' },
                 { id: 'info', icon: 'fa-book-medical', label: 'Drug Reference' },
-                { id: 'checker', icon: 'fa-laptop-medical', label: 'Interaction Checker' },
+                { id: 'checker', icon: 'fa-laptop-medical', label: 'Interactions' },
             ];
 
             return (
-                <div className="w-72 bg-slate-900 text-slate-300 flex flex-col h-full border-r border-slate-800 hidden md:flex shrink-0 transition-all duration-300">
-                    <div className="p-6 flex items-center gap-3 text-white">
-                        <div className="w-10 h-10 bg-medical-600 rounded-lg flex items-center justify-center shadow-lg shadow-medical-500/30">
-                            <i className="fas fa-heart-pulse text-xl"></i>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="font-bold text-lg leading-tight tracking-tight">MediMatch</span>
-                            <span className="text-xs text-medical-400 font-medium tracking-widest uppercase">Clinical AI</span>
+                <div className="w-20 lg:w-72 bg-[#E8F1F8] border-r border-slate-200 flex flex-col h-full shrink-0 z-20 transition-all duration-300">
+                    {/* Brand */}
+                    <div className="h-64 flex items-center justify-center border-b border-slate-100 p-4">
+                        {/* UPDATED LOGO SIZE: Increased 2x and removed text */}
+                        <div className="flex items-center justify-center w-full">
+                            <img src="logo medimatch.png" alt="Logo" className="w-full h-48 object-contain" />
                         </div>
                     </div>
 
-                    <div className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
-                        <p className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">Menu</p>
+                    {/* Navigation */}
+                    <div className="flex-1 py-6 px-3 space-y-2 overflow-y-auto custom-scrollbar">
+                        <p className="hidden lg:block px-4 mb-2 text-xs font-bold text-slate-400 uppercase tracking-widest">Modules</p>
                         {menuItems.map(item => (
                             <button
                                 key={item.id}
                                 onClick={() => setActiveTab(item.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                                className={`w-full flex items-center gap-4 px-3 lg:px-4 py-3.5 rounded-xl transition-all duration-200 group relative overflow-hidden ${
                                     activeTab === item.id 
-                                    ? 'bg-medical-600 text-white shadow-md' 
-                                    : 'hover:bg-slate-800 hover:text-white'
+                                    ? 'bg-medical-50 text-medical-700 font-bold shadow-sm' 
+                                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium'
                                 }`}
                             >
-                                <i className={`fas ${item.icon} w-6 text-center transition-transform group-hover:scale-110 ${activeTab === item.id ? 'text-white' : 'text-slate-400'}`}></i>
-                                {item.label}
+                                {activeTab === item.id && <div className="absolute left-0 top-0 bottom-0 w-1 bg-medical-500 rounded-r-full"></div>}
+                                <i className={`fas ${item.icon} w-6 text-center text-lg ${activeTab === item.id ? 'text-medical-600' : 'text-slate-400 group-hover:text-slate-600'}`}></i>
+                                <span className="hidden lg:block">{item.label}</span>
                             </button>
                         ))}
                     </div>
 
-                    <div className="p-4 border-t border-slate-800 bg-slate-900">
-                        <div className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-medical-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-inner">
+                    {/* User Profile */}
+                    <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+                        <div className="flex items-center gap-3 p-2 rounded-xl border border-slate-200/60 bg-white shadow-sm">
+                            <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold shadow-md">
                                 {user.charAt(0).toUpperCase()}
                             </div>
-                            <div className="flex-1 overflow-hidden">
-                                <p className="text-sm font-semibold text-white truncate">{user}</p>
-                                <p className="text-xs text-medical-400">Active Session</p>
+                            <div className="hidden lg:block flex-1 overflow-hidden">
+                                <p className="text-sm font-bold text-slate-800 truncate">{user}</p>
+                                <p className="text-xs text-medical-600 font-medium">Online</p>
                             </div>
-                            <button onClick={onLogout} className="text-slate-400 hover:text-red-400 transition-colors p-2" title="Logout">
-                                <i className="fas fa-sign-out-alt"></i>
+                            <button onClick={onLogout} className="hidden lg:block text-slate-400 hover:text-red-500 transition-colors p-2" title="Logout">
+                                <i className="fas fa-power-off"></i>
                             </button>
                         </div>
                     </div>
@@ -201,27 +239,17 @@
 
         // --- COMPONENT: RISK BADGE ---
         const RiskBadge = ({ level, hex }) => {
-            const getIcon = () => {
-                const l = (level || '').toLowerCase();
-                if(l.includes('safe') || l.includes('low')) return 'fa-check-circle';
-                if(l.includes('critical') || l.includes('high')) return 'fa-exclamation-triangle';
-                return 'fa-info-circle';
-            };
-
             const getColor = () => {
                 const l = (level || '').toLowerCase();
-                if(l.includes('safe') || l.includes('low')) return '#10b981';
-                if(l.includes('critical') || l.includes('high') || l.includes('red')) return '#ef4444';
-                if(l.includes('moderate') || l.includes('medium') || l.includes('yellow')) return '#f59e0b';
-                return '#64748b';
+                if(l.includes('safe') || l.includes('low')) return 'bg-green-100 text-green-700 border-green-200';
+                if(l.includes('critical') || l.includes('high') || l.includes('red')) return 'bg-red-100 text-red-700 border-red-200';
+                if(l.includes('moderate') || l.includes('medium') || l.includes('yellow')) return 'bg-amber-100 text-amber-700 border-amber-200';
+                return 'bg-slate-100 text-slate-600 border-slate-200';
             }
 
             return (
-                <span 
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-white text-xs font-bold uppercase tracking-wide shadow-sm" 
-                    style={{ backgroundColor: hex || getColor() }}
-                >
-                    <i className={`fas ${getIcon()}`}></i>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide border ${getColor()}`}>
+                    <i className="fas fa-circle text-[8px]"></i>
                     {level || 'Unknown'}
                 </span>
             );
@@ -237,6 +265,7 @@
             const [result, setResult] = useState(null);
             const [conditions, setConditions] = useState([]);
             const [language, setLanguage] = useState("English");
+            const [isListening, setIsListening] = useState(false);
 
             const handleFileChange = (e) => {
                 if (e.target.files) {
@@ -260,18 +289,40 @@
                 setConditions(prev => prev.includes(val) ? prev.filter(c => c !== val) : [...prev, val]);
             };
 
+            const toggleSpeech = () => {
+                if (!('webkitSpeechRecognition' in window)) {
+                    alert("Voice input is not supported in this browser. Try Chrome or Edge.");
+                    return;
+                }
+
+                const recognition = new window.webkitSpeechRecognition();
+                recognition.lang = 'en-US';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onstart = () => {
+                    setIsListening(true);
+                };
+
+                recognition.onend = () => {
+                    setIsListening(false);
+                };
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    setText(prev => prev + (prev ? " " : "") + transcript);
+                };
+
+                recognition.start();
+            };
+
             const analyze = async () => {
                 if (!files.length && !text) return alert("Please upload an image or enter text notes.");
-                
                 setLoading(true);
                 setResult(null);
-                setLoadingStep("Uploading Images...");
+                setLoadingStep("Uploading...");
                 const stepInterval = setInterval(() => {
-                    setLoadingStep(prev => {
-                        if(prev === "Uploading Images...") return "Scanning Handwriting...";
-                        if(prev === "Scanning Handwriting...") return "Checking Interactions...";
-                        return "Finalizing Report...";
-                    });
+                    setLoadingStep(prev => prev === "Uploading..." ? "Scanning..." : prev === "Scanning..." ? "Analyzing..." : "Finalizing...");
                 }, 1500);
 
                 const formData = new FormData();
@@ -285,7 +336,6 @@
                     const res = await fetch("/api/analyze", { method: "POST", body: formData });
                     const json = await res.json();
                     clearInterval(stepInterval);
-                    
                     if(json.status === 'success') {
                         setResult(json.data);
                     } else {
@@ -309,44 +359,53 @@
             };
 
             return (
-                <div className="max-w-5xl mx-auto animate-fade-in pb-20">
-                    <div className="mb-8">
-                        <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Prescription Analysis</h2>
-                        <p className="text-slate-500 mt-1">AI-powered screening against new prescriptions and patient history.</p>
+                <div className="max-w-6xl mx-auto pb-20 pt-6 animate-fade-in">
+                    <div className="mb-8 flex items-end justify-between">
+                        <div>
+                            {/* Updated Header Color */}
+                            <h2 className="text-3xl font-bold text-white tracking-tight">Prescription Analysis</h2>
+                            <p className="text-slate-300 mt-1">AI-powered screening against new prescriptions and patient history.</p>
+                        </div>
                     </div>
 
                     {!result ? (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-up">
-                            <div className="lg:col-span-2 space-y-6">
-                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                    <label className="block text-sm font-bold text-slate-700 mb-3">Clinical Notes / Symptoms</label>
-                                    <div className="relative">
-                                        <textarea 
-                                            className="w-full h-40 p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-medical-500 focus:border-medical-500 outline-none resize-none text-slate-700 leading-relaxed"
-                                            placeholder="e.g. Patient reporting severe headache. Currently taking Amoxicillin..."
-                                            value={text}
-                                            onChange={(e) => setText(e.target.value)}
-                                        ></textarea>
-                                        <button className="absolute bottom-3 right-3 text-slate-400 hover:text-medical-600 transition-colors bg-white p-2 rounded-lg shadow-sm border border-slate-100">
-                                            <i className="fas fa-microphone"></i>
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-slide-up">
+                            {/* Inputs */}
+                            <div className="lg:col-span-8 space-y-6">
+                                {/* Notes Card */}
+                                <div className="bg-white p-6 rounded-2xl shadow-soft border border-slate-100 hover:shadow-md transition-shadow">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <label className="text-sm font-bold text-slate-700 uppercase tracking-wide">Clinical Context</label>
+                                        <button 
+                                            onClick={toggleSpeech}
+                                            className={`text-sm font-semibold flex items-center gap-1 transition-colors ${isListening ? 'text-red-500 animate-pulse' : 'text-medical-600 hover:text-medical-700'}`}
+                                        >
+                                            <i className={`fas fa-microphone ${isListening ? 'fa-beat' : ''}`}></i> {isListening ? 'Listening...' : 'Dictate'}
                                         </button>
                                     </div>
+                                    <textarea 
+                                        className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-medical-500/20 focus:border-medical-500 outline-none resize-none text-slate-700 leading-relaxed transition-all"
+                                        placeholder="Describe symptoms, current medications, or patient complaints..."
+                                        value={text}
+                                        onChange={(e) => setText(e.target.value)}
+                                    ></textarea>
                                 </div>
 
-                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                    <label className="block text-sm font-bold text-slate-700 mb-3">Critical Conditions (Safety Checks)</label>
+                                {/* Conditions Card */}
+                                <div className="bg-white p-6 rounded-2xl shadow-soft border border-slate-100 hover:shadow-md transition-shadow">
+                                    <label className="block text-sm font-bold text-slate-700 uppercase tracking-wide mb-4">Risk Factors</label>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                         {['Pregnancy', 'Elderly (65+)', 'Liver Issue', 'Hypertension'].map(c => (
                                             <button 
                                                 key={c}
                                                 onClick={() => toggleCondition(c)}
-                                                className={`px-4 py-3 rounded-xl text-sm font-medium border transition-all flex items-center justify-center gap-2 ${
+                                                className={`px-4 py-3 rounded-xl text-sm font-semibold border transition-all flex items-center justify-center gap-2 ${
                                                     conditions.includes(c) 
-                                                    ? 'bg-medical-50 border-medical-500 text-medical-700 shadow-inner' 
-                                                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-white hover:shadow-sm'
+                                                    ? 'bg-medical-500 border-medical-500 text-white shadow-md transform scale-105' 
+                                                    : 'bg-white border-slate-200 text-slate-500 hover:border-medical-300 hover:text-medical-600'
                                                 }`}
                                             >
-                                                {conditions.includes(c) ? <i className="fas fa-check-circle text-medical-500"></i> : <i className="far fa-circle text-slate-400"></i>}
+                                                {conditions.includes(c) && <i className="fas fa-check"></i>}
                                                 {c}
                                             </button>
                                         ))}
@@ -354,34 +413,32 @@
                                 </div>
                             </div>
 
-                            <div className="space-y-6">
-                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-full flex flex-col">
-                                    <label className="block text-sm font-bold text-slate-700 mb-3">Upload Prescriptions</label>
+                            {/* Sidebar / Upload */}
+                            <div className="lg:col-span-4 space-y-6">
+                                <div className="bg-white p-6 rounded-2xl shadow-soft border border-slate-100 h-full flex flex-col">
+                                    <label className="block text-sm font-bold text-slate-700 uppercase tracking-wide mb-4">Evidence</label>
                                     
                                     <div className="flex-1 flex flex-col gap-4">
-                                        <label className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 group min-h-[160px] ${
-                                            files.length ? 'border-medical-500 bg-medical-50' : 'border-slate-300 hover:border-medical-400 hover:bg-slate-50'
+                                        <label className={`flex-1 min-h-[200px] flex flex-col items-center justify-center border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 group relative overflow-hidden ${
+                                            files.length ? 'border-medical-400 bg-medical-50/50' : 'border-slate-300 hover:border-medical-400 hover:bg-slate-50'
                                         }`}>
                                             <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
-                                            <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                                <i className={`fas fa-cloud-upload-alt text-2xl ${files.length ? 'text-medical-600' : 'text-slate-400'}`}></i>
+                                            <div className="z-10 flex flex-col items-center">
+                                                <div className="w-14 h-14 bg-white rounded-full shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform text-medical-500">
+                                                    <i className="fas fa-cloud-upload-alt text-2xl"></i>
+                                                </div>
+                                                <p className="text-sm font-bold text-slate-700">Upload Rx Images</p>
+                                                <p className="text-xs text-slate-400 mt-1">JPG, PNG supported</p>
                                             </div>
-                                            <p className="text-sm font-medium text-slate-700">
-                                                {files.length ? "Add More Pages" : "Drag & Drop or Click"}
-                                            </p>
-                                            <p className="text-xs text-slate-400 mt-1">Supports JPG, PNG</p>
                                         </label>
 
                                         {previews.length > 0 && (
                                             <div className="grid grid-cols-3 gap-2 animate-fade-in">
                                                 {previews.map((src, i) => (
-                                                    <div key={i} className="relative group aspect-square rounded-lg overflow-hidden border border-slate-200">
+                                                    <div key={i} className="relative group aspect-square rounded-lg overflow-hidden border border-slate-200 shadow-sm">
                                                         <img src={src} className="w-full h-full object-cover" />
-                                                        <button 
-                                                            onClick={() => removeFile(i)}
-                                                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                                                        >
-                                                            <i className="fas fa-times"></i>
+                                                        <button onClick={() => removeFile(i)} className="absolute top-1 right-1 bg-white/90 text-red-500 rounded-full w-6 h-6 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <i className="fas fa-times text-xs"></i>
                                                         </button>
                                                     </div>
                                                 ))}
@@ -389,13 +446,13 @@
                                         )}
                                     </div>
 
-                                    <div className="mt-6 space-y-4">
+                                    <div className="mt-6 space-y-4 pt-6 border-t border-slate-100">
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-2">Output Language</label>
+                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Language</label>
                                             <select 
                                                 value={language}
                                                 onChange={(e) => setLanguage(e.target.value)}
-                                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 focus:ring-medical-500"
+                                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-medical-500"
                                             >
                                                 <option>English</option>
                                                 <option>Hindi (हिंदी)</option>
@@ -407,18 +464,9 @@
                                         <button 
                                             onClick={analyze}
                                             disabled={loading || (!files.length && !text)}
-                                            className="w-full bg-medical-600 hover:bg-medical-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 flex justify-center items-center gap-2"
+                                            className="w-full bg-gradient-to-r from-medical-600 to-medical-500 hover:from-medical-500 hover:to-medical-400 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl hover:shadow-medical-500/30 transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                                         >
-                                            {loading ? (
-                                                <span className="flex items-center gap-2">
-                                                    <i className="fas fa-circle-notch fa-spin"></i> {loadingStep}
-                                                </span>
-                                            ) : (
-                                                <>
-                                                    <i className="fas fa-microscope"></i>
-                                                    <span>Run Analysis</span>
-                                                </>
-                                            )}
+                                            {loading ? <span className="flex items-center justify-center gap-2"><i className="fas fa-circle-notch fa-spin"></i> {loadingStep}</span> : "Analyze Prescription"}
                                         </button>
                                     </div>
                                 </div>
@@ -426,50 +474,47 @@
                         </div>
                     ) : (
                         <div className="animate-slide-up max-w-4xl mx-auto">
-                            <div className="bg-white rounded-2xl shadow-xl border-t-8 overflow-hidden" style={{ borderTopColor: result.risk_hex || '#64748b' }}>
-                                <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+                                <div className="p-8 bg-slate-50 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                     <div>
                                         <h3 className="text-2xl font-bold text-slate-800">Clinical Assessment</h3>
-                                        <p className="text-slate-500 text-sm mt-1">Generated based on provided evidence and patient history.</p>
+                                        <p className="text-slate-500 text-sm mt-1">Generated based on provided evidence and history.</p>
                                     </div>
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Risk Level</span>
-                                        <RiskBadge level={result.risk_level} hex={result.risk_hex} />
-                                    </div>
+                                    <RiskBadge level={result.risk_level} hex={result.risk_hex} />
                                 </div>
 
                                 <div className="p-8 space-y-8">
                                     <div>
-                                        <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">
-                                            <i className="fas fa-capsules text-medical-500"></i> Identified Medications
+                                        <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
+                                            Identified Medications
                                         </h4>
                                         <div className="flex flex-wrap gap-2">
                                             {result.medicines_found && result.medicines_found.length ? result.medicines_found.map((m, i) => (
-                                                <span key={i} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium border border-slate-200">
+                                                <span key={i} className="px-4 py-2 bg-white text-slate-700 rounded-lg text-sm font-semibold border border-slate-200 shadow-sm">
                                                     {m}
                                                 </span>
-                                            )) : <span className="text-sm text-slate-400 italic">No specific medicines identified in text/image.</span>}
+                                            )) : <span className="text-sm text-slate-400 italic">None detected.</span>}
                                         </div>
                                     </div>
 
                                     <div>
-                                        <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">
-                                            <i className="fas fa-file-medical-alt text-medical-500"></i> Analysis & Warning
+                                        <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
+                                            Analysis
                                         </h4>
-                                        <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-slate-800 leading-relaxed shadow-inner">
+                                        <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100 text-slate-800 leading-relaxed text-lg">
                                             {result.alert_message}
                                         </div>
                                     </div>
 
                                     {result.alternatives && result.alternatives.length > 0 && (
                                         <div className="animate-fade-in">
-                                            <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">
-                                                <i className="fas fa-clipboard-check text-green-500"></i> Safe Alternatives
+                                            <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
+                                                Recommendations
                                             </h4>
-                                            <ul className="bg-green-50 p-5 rounded-xl border border-green-100 space-y-3">
+                                            <ul className="grid gap-3">
                                                 {result.alternatives.map((alt, i) => (
-                                                    <li key={i} className="text-sm text-green-800 font-medium flex items-start gap-3">
-                                                        <i className="fas fa-check-circle mt-1 text-green-600"></i> 
+                                                    <li key={i} className="bg-green-50 p-4 rounded-xl border border-green-100 text-sm text-green-800 font-medium flex items-center gap-3">
+                                                        <div className="w-6 h-6 rounded-full bg-green-200 flex items-center justify-center shrink-0 text-green-700 text-xs"><i className="fas fa-check"></i></div>
                                                         <span>{alt}</span>
                                                     </li>
                                                 ))}
@@ -478,12 +523,12 @@
                                     )}
                                 </div>
 
-                                <div className="bg-slate-50 px-8 py-6 border-t border-slate-200 flex justify-between items-center">
-                                    <button onClick={reset} className="text-slate-500 hover:text-medical-600 font-medium text-sm flex items-center gap-2 transition-colors">
-                                        <i className="fas fa-arrow-left"></i> Analyze Another
+                                <div className="bg-slate-50 px-8 py-6 border-t border-slate-100 flex justify-between items-center">
+                                    <button onClick={() => setResult(null)} className="text-slate-500 hover:text-medical-600 font-semibold text-sm flex items-center gap-2 transition-colors">
+                                        <i className="fas fa-arrow-left"></i> New Analysis
                                     </button>
-                                    <button onClick={() => window.print()} className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-all flex items-center gap-2">
-                                        <i className="fas fa-print"></i> Save Report
+                                    <button onClick={() => window.print()} className="bg-white border border-slate-200 hover:border-medical-300 text-slate-700 px-5 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-all flex items-center gap-2">
+                                        <i className="fas fa-print"></i> Report
                                     </button>
                                 </div>
                             </div>
@@ -493,7 +538,7 @@
             );
         };
 
-        // --- PAGE: HISTORY (CONNECTED TO DB) ---
+        // --- PAGE: HISTORY ---
         const History = ({ patientId }) => {
             const [history, setHistory] = useState([]);
             const [loading, setLoading] = useState(true);
@@ -517,11 +562,12 @@
             }, [patientId]);
 
             return (
-                <div className="max-w-4xl mx-auto animate-fade-in">
+                <div className="max-w-5xl mx-auto animate-fade-in pt-6">
+                    {/* Updated Header Color */}
                     <div className="flex justify-between items-center mb-8">
                         <div>
-                            <h2 className="text-3xl font-bold text-slate-900">Patient History</h2>
-                            <p className="text-slate-500 text-sm mt-1">Records for Patient ID: <span className="font-bold">{patientId}</span></p>
+                            <h2 className="text-3xl font-bold text-white">Patient History</h2>
+                            <p className="text-slate-300 text-sm mt-1">Records for Patient ID: <span className="font-bold text-white">{patientId}</span></p>
                         </div>
                     </div>
 
@@ -532,31 +578,20 @@
                         </div>
                     ) : history.length === 0 ? (
                         <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
-                            <i className="fas fa-folder-open text-4xl text-slate-300 mb-4"></i>
-                            <p className="text-slate-500">No history found for this patient ID.</p>
+                            <p className="text-slate-500 font-medium">No records found for {patientId}</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
                             {history.map(entry => (
-                                <div key={entry.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer group">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div>
-                                            <div className="text-sm text-slate-400 font-semibold mb-1 flex items-center gap-2">
-                                                <i className="far fa-calendar-alt"></i> {new Date(entry.date).toLocaleString()}
-                                            </div>
-                                        </div>
+                                <div key={entry.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-soft hover:shadow-md transition-all group">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="text-sm font-bold text-slate-400 uppercase tracking-wide">{new Date(entry.date).toLocaleDateString()}</div>
                                         <RiskBadge level={entry.risk} />
                                     </div>
-                                    
-                                    <div className="flex flex-wrap gap-2 mb-3">
-                                        {entry.meds.map((m, i) => (
-                                            <span key={i} className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded border border-slate-200">{m}</span>
-                                        ))}
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {entry.meds.map((m, i) => <span key={i} className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg">{m}</span>)}
                                     </div>
-                                    
-                                    <p className="text-sm text-slate-600 group-hover:text-medical-700 transition-colors bg-slate-50 p-3 rounded-lg border border-transparent group-hover:border-medical-100">
-                                        <i className="fas fa-info-circle mr-2 text-medical-500"></i> {entry.alert}
-                                    </p>
+                                    <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl">{entry.alert}</p>
                                 </div>
                             ))}
                         </div>
@@ -565,7 +600,7 @@
             );
         };
 
-        // --- PAGE: MEDICINE INFO (CONNECTED TO API) ---
+        // --- PAGE: MEDICINE INFO ---
         const MedicineInfo = () => {
             const [search, setSearch] = useState("");
             const [drugs, setDrugs] = useState([]);
@@ -595,18 +630,19 @@
             }, [search]);
 
             return (
-                <div className="max-w-5xl mx-auto animate-fade-in">
+                <div className="max-w-5xl mx-auto animate-fade-in pt-6">
                     <div className="text-center mb-10">
-                        <h2 className="text-3xl font-bold text-slate-900 mb-2">Drug Reference</h2>
-                        <p className="text-slate-500">Quick access to safety information and warnings.</p>
+                        {/* Updated Header Color */}
+                        <h2 className="text-3xl font-extrabold text-white mb-2">Drug Reference</h2>
+                        <p className="text-slate-300">Quick access to safety information and warnings.</p>
                     </div>
 
-                    <div className="max-w-xl mx-auto relative mb-10">
+                    <div className="max-w-xl mx-auto relative mb-12">
                         <i className="fas fa-search absolute left-5 top-4 text-slate-400 text-lg"></i>
                         <input 
                             type="text" 
                             placeholder="Search generic or brand names..." 
-                            className="w-full pl-12 pr-6 py-4 rounded-2xl border border-slate-200 shadow-sm focus:ring-4 focus:ring-medical-100 focus:border-medical-500 outline-none text-lg transition-all"
+                            className="w-full pl-12 pr-6 py-4 rounded-2xl border border-slate-200 shadow-soft focus:ring-4 focus:ring-medical-100 focus:border-medical-500 outline-none text-lg font-medium transition-all"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
@@ -683,9 +719,10 @@
             };
 
             return (
-                <div className="max-w-2xl mx-auto animate-fade-in">
-                    <h2 className="text-3xl font-bold text-slate-900 mb-2">Quick Interaction Check</h2>
-                    <p className="text-slate-500 mb-8">Manual lookup for specific drug combinations.</p>
+                <div className="max-w-2xl mx-auto animate-fade-in pt-10">
+                    {/* Updated Header Color */}
+                    <h2 className="text-3xl font-bold text-white mb-2 text-center">Quick Check</h2>
+                    <p className="text-slate-300 mb-8 text-center">Manual lookup for specific drug combinations.</p>
                     
                     <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-lg space-y-6 relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-medical-400 to-medical-600"></div>
@@ -769,34 +806,32 @@
             if (!isLoggedIn) return <LoginOverlay onLogin={handleLogin} />;
 
             return (
-                <div className="flex h-screen bg-slate-50 font-sans">
+                <div className="flex h-screen font-sans overflow-hidden relative">
+                    {/* Background Animation (Persists after login) */}
+                    <div className="absolute inset-0 z-0 bg-gradient-to-br from-slate-900 via-medical-900 to-slate-900 pointer-events-none">
+                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-medical-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
+                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{animationDelay: '2s'}}></div>
+                    </div>
+
                     <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={patientId} onLogout={handleLogout} />
                     
-                    <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+                    <div className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
                         {/* Mobile Header */}
-                        <div className="md:hidden bg-white p-4 border-b flex justify-between items-center shadow-sm z-10 sticky top-0">
-                            <span className="font-bold text-slate-800 flex items-center gap-2">
-                                <i className="fas fa-heart-pulse text-medical-600"></i> MediMatch
+                        <div className="lg:hidden bg-white/80 backdrop-blur p-4 border-b border-slate-100 flex justify-between items-center z-10 sticky top-0">
+                            <span className="font-extrabold text-slate-800 flex items-center gap-2">
+                                {/* UPDATED LOGO HERE */}
+                                <img src="logo medimatch.png" alt="Logo" className="h-10 w-auto object-contain" />
                             </span>
-                            <div className="flex gap-4 text-slate-500">
-                                <button onClick={() => setActiveTab('home')} className={activeTab === 'home' ? 'text-medical-600' : ''}><i className="fas fa-home"></i></button>
-                                <button onClick={() => setActiveTab('history')} className={activeTab === 'history' ? 'text-medical-600' : ''}><i className="fas fa-history"></i></button>
-                                <button onClick={handleLogout}><i className="fas fa-sign-out-alt"></i></button>
-                            </div>
+                            <button onClick={handleLogout} className="text-slate-400"><i className="fas fa-power-off"></i></button>
                         </div>
 
                         {/* Main Content Area */}
-                        <main className="flex-1 overflow-y-auto p-4 md:p-10 scrollbar-hide bg-white md:bg-transparent">
+                        <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 scrollbar-hide">
                             {activeTab === 'home' && <Home patientId={patientId} />}
                             {activeTab === 'history' && <History patientId={patientId} />}
                             {activeTab === 'info' && <MedicineInfo />}
                             {activeTab === 'checker' && <Checker />}
                         </main>
-
-                        {/* Disclaimer Footer */}
-                        <footer className="p-3 text-center text-[10px] md:text-xs text-slate-400 bg-white/80 md:bg-slate-50/80 backdrop-blur border-t border-slate-200 z-10">
-                            <p><strong>Disclaimer:</strong> This system is a Clinical Decision Support Tool (CDST) and does not replace professional medical advice. Always verify with a licensed practitioner.</p>
-                        </footer>
                     </div>
                 </div>
             );

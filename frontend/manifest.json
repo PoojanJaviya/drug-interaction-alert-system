@@ -1,0 +1,16 @@
+{
+  "name": "MediMatch AI",
+  "short_name": "MediMatch",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0ea5e9",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "logo medimatch.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ]
+}

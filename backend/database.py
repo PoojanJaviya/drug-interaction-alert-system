@@ -6,12 +6,23 @@ from datetime import datetime
 
 DB_NAME = "medical_history.db"
 
+# ... keep imports (sqlite3, json, csv, os, datetime) ...
+
+# 1. UPDATE init_db to create a 'users' table
 def init_db():
-    """Creates the tables if they don't exist."""
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     
-    # 1. Patient History Table
+    # User Auth Table (NEW)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            password_hash TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Patient History Table (EXISTING)
     c.execute('''
         CREATE TABLE IF NOT EXISTS patient_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,7 +34,7 @@ def init_db():
         )
     ''')
 
-    # 2. Drug Reference Table
+    # Drug Reference Table (EXISTING)
     c.execute('''
         CREATE TABLE IF NOT EXISTS drug_reference (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,10 +48,30 @@ def init_db():
     
     conn.commit()
     conn.close()
-    
-    # Auto-seed if empty
     seed_drugs()
 
+# 2. ADD these new functions for Auth
+def create_user(username, password_hash):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    try:
+        c.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (username, password_hash))
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False # Username taken
+    finally:
+        conn.close()
+
+def get_user_password(username):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute('SELECT password_hash FROM users WHERE username = ?', (username,))
+    row = c.fetchone()
+    conn.close()
+    return row[0] if row else None
+
+# ... keep seed_drugs, search_drugs, save_report, etc. ...
 def seed_drugs():
     """Populates the drug database from CSV or default data."""
     conn = sqlite3.connect(DB_NAME)

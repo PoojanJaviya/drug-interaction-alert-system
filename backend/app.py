@@ -1,10 +1,10 @@
-# ... existing imports ...
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 from services import analyze_prescription_image
 import database 
+from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
 
@@ -26,6 +26,36 @@ def serve_logo():
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "healthy"})
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.json
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+
+    if not username or not password:
+        return jsonify({"error": "Username and password required"}), 400
+
+    # Hash the password for security
+    hashed_pw = generate_password_hash(password)
+    
+    if database.create_user(username, hashed_pw):
+        return jsonify({"status": "success", "message": "User created"})
+    else:
+        return jsonify({"error": "Username already exists"}), 409
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+
+    stored_hash = database.get_user_password(username)
+    
+    if stored_hash and check_password_hash(stored_hash, password):
+        return jsonify({"status": "success", "username": username})
+    else:
+        return jsonify({"error": "Invalid credentials"}), 401
 
 # --- HISTORY ENDPOINT ---
 @app.route('/api/history', methods=['GET'])

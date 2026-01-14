@@ -118,61 +118,120 @@
             { name: "Metformin", category: "Antidiabetic", use: "Treats type 2 diabetes.", sideEffects: "Nausea, stomach upset.", caution: "Take with meals to reduce side effects." }
         ];
 
-        // --- COMPONENT: LOGIN OVERLAY (Glassmorphism) ---
+        // --- COMPONENT: LOGIN OVERLAY (Auth System) ---
         const LoginOverlay = ({ onLogin }) => {
-            const [id, setId] = useState("");
+            const [isRegistering, setIsRegistering] = useState(false);
+            const [username, setUsername] = useState("");
+            const [password, setPassword] = useState("");
             const [loading, setLoading] = useState(false);
+            const [error, setError] = useState("");
 
-            const handleSubmit = () => {
-                if(!id) return;
+            const handleSubmit = async () => {
+                if(!username || !password) {
+                    setError("Please fill in all fields");
+                    return;
+                }
+                setError("");
                 setLoading(true);
-                setTimeout(() => onLogin(id), 800);
+
+                const endpoint = isRegistering ? '/api/register' : '/api/login';
+                
+                try {
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        if (isRegistering) {
+                            // Auto login after register or just switch mode
+                            setIsRegistering(false);
+                            setError("Account created! Please log in.");
+                            setPassword(""); 
+                        } else {
+                            // Login Success
+                            onLogin(data.username);
+                        }
+                    } else {
+                        setError(data.error || "Authentication failed");
+                    }
+                } catch (err) {
+                    setError("Server connection failed");
+                } finally {
+                    setLoading(false);
+                }
             };
 
             return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-slate-900 via-medical-900 to-slate-900 p-4 animate-fade-in">
-                    {/* Abstract Background Shapes */}
-                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-medical-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
-                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{animationDelay: '2s'}}></div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 p-4 animate-fade-in">
+                    {/* Background Art */}
+                    <div className="absolute inset-0 overflow-hidden">
+                        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-medical-600/30 rounded-full blur-[100px] animate-float"></div>
+                        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[100px] animate-float" style={{animationDelay: '2s'}}></div>
                     </div>
 
-                    <div className="relative z-10 w-full max-w-md bg-white/90 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-white/20 transform transition-all">
-                        <div className="text-center mb-8">
-                            <div className="flex justify-center mb-4">
-                                <img src="logo medimatch.png" alt="MediMatch Logo" className="h-60 w-auto object-contain drop-shadow-md animate-float" />
+                    <div className="relative z-10 w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+                        <div className="p-8">
+                            <div className="text-center mb-8">
+                                <img src="logo medimatch.png" alt="MediMatch" className="h-24 w-auto mx-auto mb-4 drop-shadow-lg" />
+                                <h2 className="text-2xl font-bold text-white tracking-tight">
+                                    {isRegistering ? "Create Account" : "Welcome Back"}
+                                </h2>
+                                <p className="text-slate-400 text-sm mt-1">Secure Clinical Decision Support</p>
                             </div>
-                            <p className="text-slate-500 mt-2 font-medium">Secure Clinical Workspace</p>
-                        </div>
-                        
-                        <div className="space-y-6">
-                            <div className="group">
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">UserName</label>
-                                <div className="relative">
-                                    <i className="fas fa-user-md absolute left-4 top-4 text-slate-400 group-focus-within:text-medical-500 transition-colors"></i>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-400 uppercase ml-1">Username / ID</label>
                                     <input 
                                         type="text" 
-                                        placeholder="Enter ID (e.g., Doc123)"
-                                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-medical-500 focus:border-medical-500 outline-none text-lg font-semibold text-slate-700 transition-all shadow-inner"
-                                        value={id}
-                                        onChange={(e) => setId(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                                        autoFocus
+                                        className="w-full mt-1 bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-medical-500 transition-all"
+                                        placeholder="e.g. DrSmith"
+                                        value={username}
+                                        onChange={e => setUsername(e.target.value)}
                                     />
                                 </div>
+                                
+                                <div>
+                                    <label className="text-xs font-bold text-slate-400 uppercase ml-1">Password</label>
+                                    <input 
+                                        type="password" 
+                                        className="w-full mt-1 bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-medical-500 transition-all"
+                                        placeholder="••••••••"
+                                        value={password}
+                                        onChange={e => setPassword(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                                    />
+                                </div>
+
+                                {error && (
+                                    <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-xs font-medium text-center animate-fade-in">
+                                        <i className="fas fa-exclamation-circle mr-1"></i> {error}
+                                    </div>
+                                )}
+
+                                <button 
+                                    onClick={handleSubmit}
+                                    disabled={loading}
+                                    className="w-full bg-gradient-to-r from-medical-600 to-medical-500 hover:from-medical-500 hover:to-medical-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-medical-500/20 transform active:scale-95 transition-all flex items-center justify-center gap-2 mt-2"
+                                >
+                                    {loading ? <i className="fas fa-circle-notch fa-spin"></i> : (isRegistering ? "Sign Up" : "Sign In")}
+                                </button>
                             </div>
-                            <button 
-                                onClick={handleSubmit}
-                                disabled={!id || loading}
-                                className="w-full bg-gradient-to-r from-medical-600 to-medical-500 hover:from-medical-500 hover:to-medical-400 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl hover:shadow-medical-500/20 transform hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {loading ? <i className="fas fa-circle-notch fa-spin"></i> : <span>Authenticate <i className="fas fa-arrow-right ml-2"></i></span>}
-                            </button>
                         </div>
-                        <div className="mt-8 text-center">
-                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 text-green-700 text-xs font-bold border border-green-100">
-                                <i className="fas fa-lock"></i> HIPAA Compliant
-                            </span>
+
+                        <div className="bg-slate-950/50 p-4 text-center border-t border-white/5">
+                            <p className="text-sm text-slate-400">
+                                {isRegistering ? "Already have an account?" : "Don't have an account?"} 
+                                <button 
+                                    onClick={() => { setIsRegistering(!isRegistering); setError(""); }}
+                                    className="ml-2 text-medical-400 hover:text-medical-300 font-bold transition-colors"
+                                >
+                                    {isRegistering ? "Login" : "Register"}
+                                </button>
+                            </p>
                         </div>
                     </div>
                 </div>

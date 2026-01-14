@@ -6,7 +6,6 @@ __pycache__/
 test_api.py
 # C extensions
 *.so
-ngrok.exe
 
 # Distribution / packaging
 .Python

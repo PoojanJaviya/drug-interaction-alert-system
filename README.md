@@ -1,84 +1,120 @@
-MediMatch AI 🏥💊
+# MediMatch AI 🏥💊
 
-AI-Powered Clinical Decision Support System
+⚠️ **NOTE FOR JUDGES**: The demo is hosted on a Free Tier instance. It may take **30–50 seconds** to wake up on the first load. Please be patient.
 
-A secure, history-aware prescription analysis tool that prevents adverse drug interactions using Multimodal AI.
+---
 
-🚀 Overview:
-- MediMatch AI acts as a second pair of eyes for patients, pharmacists, and doctors. Unlike generic chatbots, it is a structured medical workflow tool that:
-- Reads Handwriting from prescription images (OCR).
-- Remembers History: Checks new prescriptions against past medications to prevent cross-interaction errors.
-- Validates Safety: Checks for contraindications against conditions (e.g., Pregnancy, Hypertension).
-- Speeds Up Care: Provides instant "Red/Green" safety signals with clear, non-jargon explanations.
+## AI‑Powered Clinical Decision Support System
 
- ✨ Key Features:
-- 📸 Prescription Scanning: Uses Gemini 2.5 Flash (Multimodal AI) to extract medicine names from handwritten notes.
-- 🧠 History-Aware Analysis: Tracks a patient's medication timeline to detect conflicts between a new prescription and an old one (the "Amnesia Problem").
-- 🌍 Multilingual Support: Generates safety alerts in English, Hindi, Spanish, or French for accessibility.
-- 🎙️ Voice Dictation: Allows users/doctors to dictate symptoms instead of typing.
-- 📚 Drug Reference: Built-in searchable database of thousands of medicines (seeded from FDA/Kaggle datasets).
-- 📱 Progressive Web App (PWA): Installable on iOS/Android/Desktop as a native-like app.
-- 🛡️ Safety Guardrails: Strict validation layer rejects non-medical images (e.g., random photos) to prevent AI hallucinations.
+**MediMatch AI** is a secure, history‑aware prescription analysis tool designed to help prevent adverse drug–drug interactions using multimodal AI.
+### 🔗 Quick Links
+- 🌐 Live Demo: https://drug-interaction-alert-system-1.onrender.com
+- 📂 GitHub Repo: https://github.com/PoojanJaviya/drug-interaction-alert-system
 
-🛠️ Tech Stack:
-- Frontend: React (SPA architecture), Tailwind CSS, FontAwesome.
-- Backend: Python Flask.
-- AI Engine: Google Gemini 2.5 Flash (via Google Generative AI SDK).
-- Database: SQLite (Embedded, zero-config persistence).
-- Deployment: Ready for Render.com / Ngrok tunneling.
+---
 
-⚙️ Installation & Setup:
-1. Clone the Repository:
-```
-git clone [https://github.com/your-username/medimatch-ai.git](https://github.com/your-username/medimatch-ai.git)
+## 🚀 Overview
+
+MediMatch AI acts as a **second pair of eyes** for patients, pharmacists, and doctors. Unlike generic chatbots, it follows a **structured medical workflow** focused on safety and clarity.
+
+The system is designed to:
+
+- Read handwritten prescriptions using OCR
+- Remember past medications to avoid cross‑interaction errors
+- Validate safety against known conditions (e.g., pregnancy, hypertension)
+- Provide fast, clear **Red / Green** safety signals with non‑technical explanations
+
+---
+
+## ✨ Key Features
+
+- 📸 **Prescription Scanning**\
+  Extracts medicine names from handwritten prescriptions using multimodal AI.
+
+- 🧠 **History‑Aware Analysis**\
+  Maintains a medication timeline to detect conflicts between new and past prescriptions (solves the *“Amnesia Problem”*).
+
+- 🌍 **Multilingual Support**\
+  Generates safety alerts in **English, Hindi, Spanish, and French** for accessibility.
+
+- 🎙️ **Voice Dictation**\
+  Allows doctors or users to dictate symptoms instead of typing.
+
+- 📚 **Drug Reference Module**\
+  Built‑in searchable database of medicines with basic usage and side‑effect information (seeded from public datasets).
+
+- 📱 **Progressive Web App (PWA)**\
+  Installable on mobile and desktop for a native‑like experience.
+
+- 🛡️ **Safety Guardrails**\
+  Rejects non‑medical images to reduce the risk of AI hallucinations.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend**: React (SPA architecture), Tailwind CSS, FontAwesome
+- **Backend**: Python Flask
+- **AI Engine**: Google Gemini 2.5 Flash (via Google Generative AI SDK)
+- **Database**: SQLite (embedded, zero‑configuration persistence)
+- **Deployment**: Render.com
+
+---
+
+## ⚙️ Installation & Setup (Local)
+
+### 1️⃣ Clone the Repository
+
+```bash
+git clone https://github.com/your-username/medimatch-ai.git
 cd medimatch-ai
 ```
-2. Backend Setup:
+
+### 2️⃣ Backend Setup
+
 Navigate to the backend folder and install dependencies:
-```
+
+```bash
 pip install -r backend/requirements.txt
 ```
-3. Environment Variables:
-Create a .env file inside the backend/ folder and add your Gemini API Key:
-```
+
+### 3️⃣ Environment Variables
+
+Create a `.env` file inside the `backend/` folder and add your API key:
+
+```env
 GEMINI_API_KEY="your_google_ai_studio_key_here"
 ```
-4. Database Seeding (Optional):
-To populate the "Drug Reference" search with real data, ensure backend/drugs.csv exists. The system auto-seeds on the first run.
 
-🚀 How to Run:
-Start the Server
-Run the Flask application from the root directory:
-```
+### 4️⃣ Run Locally
+
+```bash
 python backend/app.py
 ```
 
-The server will start on http://0.0.0.0:5000
+The server will start on:\
+`http://0.0.0.0:5000`
 
-Access the App:
-- Desktop: Open http://localhost:5000 in your browser.
-- Mobile (Local Wi-Fi): Connect your phone to the same Wi-Fi and visit http://YOUR_LAPTOP_IP:5000.
+---
 
-Mobile (Public/Demo): Use ngrok to tunnel:
-```
-ngrok http 5000
-```
+## 🧪 Testing Credentials (For Judges)
 
-📱 Mobile App Installation (PWA):
-- Open the web app on your mobile browser (Chrome/Safari).
-- Tap "Add to Home Screen" or "Install App".
-- MediMatch will appear as a standalone app icon on your device.
+You may create your own account, or use the demo credentials below (if the database has not reset):
 
-🧪 Testing the "Time Travel" Feature:
-1. Login with Patient ID: TestUser1.
-2. Upload an image of "Warfarin" (or type it in notes). Run Analysis.
-3. Reset/Logout.
-4. Login again as TestUser1.
-5. Upload an image of "Aspirin".
-6. Result: The AI will warn you about the interaction with "Warfarin" from your history, even though it wasn't in the second image.
+- **Username**: Judge
+- **Password**: demo123
 
-⚠️ Medical Disclaimer:
-This software is a Clinical Decision Support Tool (CDST) designed for educational and verification purposes only. It does not provide medical diagnoses. All outputs must be verified by a licensed healthcare professional.
+---
 
-👨‍💻 Hackathon Note:
-Built in 15 hours with a focus on Safety-First AI Architecture.
+## ⚠️ Medical Disclaimer
+
+This software is a **Clinical Decision Support Tool (CDST)** designed for educational and verification purposes only. It does **not** provide medical diagnoses or treatment recommendations. All outputs must be reviewed and confirmed by a licensed healthcare professional.
+
+---
+
+## 👨‍💻 Team
+
+**Caffeine Crew** ☕
+
+Built in **24 hours** with a strong focus on **Safety‑First AI Architecture**.
+
